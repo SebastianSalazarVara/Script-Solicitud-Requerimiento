@@ -1,0 +1,1608 @@
+DROP database IF EXISTS solicitud_requerimiento;
+
+-- CREACION DE BASE DE DATOS
+create database solicitud_requerimiento;
+
+use solicitud_requerimiento;
+
+-- CREACION DE TABLAS
+create table M_Res(
+	dni char(8) not null primary key,
+	pno varchar(50) not null,
+	sno varchar(50),
+	apa varchar(50) not null,
+	ama varchar(50) not null,
+	cor varchar(35) not null);
+
+create table M_Res_Tec(
+	dni char(8) not null primary key,
+	pno varchar(50) not null,
+	sno varchar(50),
+	apa varchar(50) not null,
+	ama varchar(50) not null,
+	cor varchar(35) not null);
+
+create table M_Dep(
+	cod char(2) not null primary key,
+	nom varchar(30) not null,
+	telFax varchar(9) not null,
+	dirP varchar(255) not null);
+
+create table M_Pro_Qui(
+	cod char(15) not null primary key,
+	nom_pro_qui varchar(60) not null,
+	uni_med varchar(15) not null,
+	pre_uni decimal(10,2) not null);
+
+create table M_Zon_Pro(
+	cod_dep char(2) not null,
+	cod_zon_pro varchar(2) not null,
+	nom_zon_pro varchar(20) not null,
+	dni_res varchar(8) not null,
+	dni_res_tec varchar(8) not null,
+	primary key(cod_dep, cod_zon_pro),
+	foreign key(cod_dep) references M_Dep(cod),
+	foreign key(dni_res) references M_Res(dni),
+	foreign key(dni_res_tec) references M_Res_Tec(dni));
+
+create table T_Sol_Req(
+	num char(3) not null,
+	dni_res char(8) not null,
+	cod_dep char(2) not null,
+	mot varchar(50) not null,
+	fec_cre date not null,
+	fec_ent date,
+	primary key(num, dni_res, cod_dep),
+	foreign key(dni_res) references M_Res(dni),
+	foreign key(cod_dep) references M_Dep(cod));
+
+create table T_Det_Sol_Req(
+	num_sol_req char(3) not null,
+	dni_res_sol_req char(8) not null,
+	cod_dep_sol_req char(2) not null,
+	cod_pro char(15) not null,
+	cod_zon_uso_pro char(2) not null,
+	can smallint not null,
+	tot decimal(15,2),
+	primary key(num_sol_req, dni_res_sol_req, cod_dep_sol_req, cod_pro, cod_zon_uso_pro),
+	foreign key(num_sol_req) references T_Sol_Req(num) ON DELETE CASCADE,
+	foreign key(dni_res_sol_req) references T_Sol_Req(dni_res) ON DELETE CASCADE,
+	foreign key(cod_dep_sol_req) references T_Sol_Req(cod_dep) ON DELETE CASCADE,
+	foreign key(cod_pro) references M_Pro_Qui(cod),
+	foreign key(cod_dep_sol_req,cod_zon_uso_pro) references M_Zon_Pro(cod_dep,cod_zon_pro));
+
+-- TRIGGERS
+CREATE TRIGGER trg_calcular_total_solicitud
+BEFORE INSERT ON T_Det_Sol_Req
+FOR EACH ROW
+SET new.tot = (SELECT pre_uni FROM M_Pro_Qui WHERE cod = new.cod_pro) * new.can;
+
+DELIMITER //
+CREATE TRIGGER before_insert_T_Sol_Req
+BEFORE INSERT ON T_Sol_Req
+FOR EACH ROW
+BEGIN
+    IF NEW.fec_ent IS NOT NULL AND NEW.fec_ent < NEW.fec_cre THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: La fecha de entrega no puede ser menor que la fecha de creación';
+    END IF;
+END;
+//
+DELIMITER ;
+
+-- INSERTAR DATOS.
+INSERT INTO M_Res (dni, pno, sno, apa, ama,cor)
+VALUES
+	('72675774', "NÉSTOR", "JUAN BAUTISTA", "SALAZAR", "VALDIVIA", "nsalazar@senasa.gob.pe"),
+	('73456887', "JILMER", "MATEO", "PAREDES", "TORRES", "jparedes@senasa.gob.pe"),
+	('72844565', "REMIGIO", "VILCA", "ROSALES", "PEREZ", "rrosales@senasa.gob.pe"),
+    ('58765432', 'CARLOS', 'ALBERTO', 'GARCÍA', 'SÁNCHEZ', 'cgarcia@senasa.gob.pe'),
+    ('67654321', 'SOFÍA', 'ALEJANDRA', 'MARTÍNEZ', 'HERNÁNDEZ', 'smartinez@senasa.gob.pe'),
+    ('76543210', 'JORGE', 'LUIS', 'RAMÍREZ', 'ALVARADO', 'jramirez@senasa.gob.pe'),
+	('52345678', 'MARÍA', 'FERNANDA', 'LOPEZ', 'GOMEZ', 'mlopez@senasa.gob.pe'),
+    ('53456789', 'RICARDO', 'ENRIQUE', 'ROJAS', 'MARTÍNEZ', 'rrojas@senasa.gob.pe'),
+    ('64567890', 'ANA', 'CAROLINA', 'SERRANO', 'GUZMÁN', 'aserrano@senasa.gob.pe'),
+    ('75678901', 'JUAN', 'PABLO', 'MORALES', 'TORO', 'jmorales@senasa.gob.pe'),
+    ('66789012', 'CLAUDIA', 'ISABEL', 'CASTILLO', 'RODRÍGUEZ', 'ccastillo@senasa.gob.pe'),
+    ('67890123', 'MIGUEL', 'ÁNGEL', 'GUTIÉRREZ', 'SOTO', 'mgutierrez@senasa.gob.pe'),
+    ('58901234', 'VANESSA', 'ALEXANDRA', 'FLORES', 'CRUZ', 'vflores@senasa.gob.pe'),
+    ('79012345', 'GABRIEL', 'EDUARDO', 'HERRERA', 'SALAZAR', 'gherrera@senasa.gob.pe'),
+    ('50123456', 'PATRICIA', 'ELENA', 'MENDOZA', 'GARCÍA', 'pmendoza@senasa.gob.pe'),
+	('51234567', 'ROBERTO', 'CARLOS', 'SOTO', 'MIRANDA', 'rsoto@senasa.gob.pe'),
+    ('68765432', 'SILVIA', 'ISABEL', 'FERNÁNDEZ', 'RAMÍREZ', 'sfernandez@senasa.gob.pe'),
+    ('77654321', 'EDUARDO', 'ANTONIO', 'MARTÍN', 'SÁNCHEZ', 'emartin@senasa.gob.pe'),
+    ('75432109', 'LAURA', 'BEATRIZ', 'GUTIÉRREZ', 'ALFARO', 'lgutierrez@senasa.gob.pe'),
+    ('64321098', 'JORGE', 'ALFONSO', 'ROJAS', 'SALAZAR', 'jrojas@senasa.gob.pe'),
+    ('73210987', 'ANA', 'MARÍA', 'MORALES', 'FLORES', 'amorales@senasa.gob.pe'),
+    ('51223344', 'RAFAEL', 'IGNACIO', 'MARTÍNEZ', 'SALAZAR', 'rmartinez@senasa.gob.pe'),
+    ('72394455', 'MARINA', 'ESTHER', 'GARCÍA', 'CASTILLO', 'mgarcia@senasa.gob.pe'),
+    ('63445566', 'JOSÉ', 'LUIS', 'RAMOS', 'FLORES', 'jramos@senasa.gob.pe'),
+    ('64556677', 'ADRIANA', 'ELIZABETH', 'GUTIÉRREZ', 'TORO', 'agutierrez@senasa.gob.pe'),
+    ('75667788', 'FERNANDO', 'ANTONIO', 'SOTO', 'MENDOZA', 'fsoto@senasa.gob.pe'),
+    ('66778899', 'ANA', 'CAROLINA', 'REYES', 'NAVARRO', 'areyes@senasa.gob.pe'),
+    ('77889900', 'CARLOS', 'ENRIQUE', 'VALDIVIA', 'ROJAS', 'cvaldivia@senasa.gob.pe'),
+    ('68990011', 'SANDRA', 'VICTORIA', 'HUAMÁN', 'PEREZ', 'shuaman@senasa.gob.pe'),
+    ('79001122', 'EDUARDO', 'ALFONSO', 'MORALES', 'GÓMEZ', 'emorales@senasa.gob.pe'),
+    ('50112233', 'MÓNICA', 'ISABEL', 'PÉREZ', 'CASTRO', 'mperez@senasa.gob.pe'),
+    ('61223344', 'JULIÁN', 'FELIPE', 'CASTILLO', 'MARTÍNEZ', 'jcastillo@senasa.gob.pe'),
+    ('72334455', 'LORENA', 'BEATRIZ', 'ROJAS', 'GARCÍA', 'lrojas@senasa.gob.pe'),
+    ('63448566', 'ROBERTO', 'CARLOS', 'SÁNCHEZ', 'TORRES', 'rsanchez@senasa.gob.pe'),
+    ('64556977', 'ISABEL', 'CRISTINA', 'TORO', 'MARTÍNEZ', 'itoro@senasa.gob.pe'),
+    ('55667788', 'JORGE', 'ALBERTO', 'GÓMEZ', 'FLORES', 'jgomez@senasa.gob.pe'),
+    ('78990043', 'MÓNICA', 'FERNANDA', 'TORO', 'SALAZAR', 'mftoro@senasa.gob.pe'),
+    ('79001154', 'JUAN', 'CARLOS', 'CASTILLO', 'PÉREZ', 'jccastillo@senasa.gob.pe'),
+    ('50011265', 'CLAUDIA', 'PATRICIA', 'GÓMEZ', 'RAMÍREZ', 'cpgomez@senasa.gob.pe'),
+    ('61122376', 'ALFONSO', 'JOSÉ', 'MENDOZA', 'SOTO', 'ajmendoza@senasa.gob.pe');
+
+INSERT INTO M_Res_Tec (dni, pno, sno, apa, ama, cor)
+VALUES
+    ('62345678', 'LUIS', 'ALBERTO', 'GUTIÉRREZ', 'RODRÍGUEZ', 'lgutierrez@senasa.gob.pe'),
+    ('53456789', 'MARÍA', 'ELENA', 'FLORES', 'HUAMÁN', 'mflores@senasa.gob.pe'),
+    ('84567890', 'CARLOS', 'ENRIQUE', 'TORO', 'MENDOZA', 'ctoro@senasa.gob.pe'),
+    ('55678901', 'JULIA', 'ROSA', 'VÁSQUEZ', 'SALAZAR', 'jvasquez@senasa.gob.pe'),
+    ('66789012', 'FELIPE', 'IGNACIO', 'SOTO', 'RAMÍREZ', 'fsoto@senasa.gob.pe'),
+    ('67890123', 'ANA', 'ISABEL', 'ROJAS', 'CHÁVEZ', 'arojas@senasa.gob.pe'),
+    ('78901234', 'JORGE', 'LUIS', 'MARTÍNEZ', 'DÍAZ', 'jmartinez@senasa.gob.pe'),
+    ('79012345', 'SILVIA', 'PATRICIA', 'PERALTA', 'FLORES', 'speralta@senasa.gob.pe'),
+    ('60123456', 'RICARDO', 'ANTONIO', 'ZAMBRANO', 'TORRES', 'rzambrano@senasa.gob.pe'),
+    ('51234567', 'CLAUDIA', 'ELIZABETH', 'GARCÍA', 'CASTILLO', 'cgarcia@senasa.gob.pe'),
+    ('62349678', 'MIGUEL', 'ÁNGEL', 'JIMÉNEZ', 'LÓPEZ', 'mjimenez@senasa.gob.pe'),
+    ('73456789', 'LUCÍA', 'CAROLINA', 'MORENO', 'SÁNCHEZ', 'lmoreno@senasa.gob.pe'),
+    ('64567890', 'PEDRO', 'JAVIER', 'CASTRO', 'REYES', 'pcastro@senasa.gob.pe'),
+    ('54678901', 'VICTORIA', 'FERNANDA', 'NAVARRO', 'GÓMEZ', 'vnavarro@senasa.gob.pe'),
+    ('66780012', 'HUGO', 'ALEJANDRO', 'MORALES', 'VARGAS', 'hmorales@senasa.gob.pe'),
+    ('68760432', 'ISABEL', 'CARMEN', 'MENDOZA', 'RÍOS', 'imendoza@senasa.gob.pe'),
+    ('67654321', 'ROBERTO', 'MARTÍN', 'GÓMEZ', 'ALVARADO', 'rgomez@senasa.gob.pe'),
+    ('76540210', 'FABIOLA', 'VICTORIA', 'SÁNCHEZ', 'TORO', 'fsanchez@senasa.gob.pe'),
+    ('65430109', 'EDUARDO', 'ANTONIO', 'RAMÍREZ', 'ROJAS', 'eramirez@senasa.gob.pe'),
+    ('54301098', 'MARTINA', 'LUCÍA', 'CASTILLO', 'GARCÍA', 'mcastillo@senasa.gob.pe'),
+    ('73210987', 'ALFONSO', 'JOSÉ', 'FLORES', 'PÉREZ', 'aflores@senasa.gob.pe'),
+    ('72109876', 'PATRICIO', 'SANTIAGO', 'HUAMÁN', 'CASTRO', 'phuaman@senasa.gob.pe'),
+    ('71098765', 'YOLANDA', 'BEATRIZ', 'DÍAZ', 'RODRÍGUEZ', 'ydiaz@senasa.gob.pe'),
+    ('70987654', 'GERARDO', 'ENRIQUE', 'VARGAS', 'NAVARRO', 'gvargas@senasa.gob.pe'),
+    ('79887766', 'ALEJANDRA', 'SOFÍA', 'TORRES', 'MARTÍNEZ', 'atorres@senasa.gob.pe'),
+    ('68776655', 'MARIO', 'ALBERTO', 'REYES', 'FERNÁNDEZ', 'mreyes@senasa.gob.pe'),
+    ('77665544', 'CAROLINA', 'ANDREA', 'SALAZAR', 'GUTIÉRREZ', 'csalazar@senasa.gob.pe'),
+    ('66554433', 'JUAN', 'CARLOS', 'PÉREZ', 'GALLEGOS', 'jperez@senasa.gob.pe'),
+    ('55443322', 'LILIANA', 'ROSA', 'VALDIVIA', 'SOTO', 'lvaldivia@senasa.gob.pe'),
+    ('74332211', 'RICARDA', 'INES', 'ROBLES', 'MORALES', 'rrobles@senasa.gob.pe'),
+    ('79847766', 'MARÍA', 'BEATRIZ', 'MARTÍNEZ', 'RODRÍGUEZ', 'mbmartinez@senasa.gob.pe'),
+    ('68736655', 'CARLOS', 'ALFONSO', 'SOTO', 'GARCÍA', 'csoto@senasa.gob.pe'),
+    ('67695344', 'SOFÍA', 'VICTORIA', 'CASTILLO', 'MENDOZA', 'svcastillo@senasa.gob.pe'),
+    ('66584233', 'HUGO', 'ENRIQUE', 'ROJAS', 'TORO', 'herojas@senasa.gob.pe'),
+    ('55241322', 'VERÓNICA', 'ISABEL', 'GÓMEZ', 'SALAZAR', 'vigomez@senasa.gob.pe'),
+    ('74132211', 'JUAN', 'CARLOS', 'NAVARRO', 'PEREZ', 'jcnvarro@senasa.gob.pe'),
+    ('61223344', 'LILIANA', 'FABIOLA', 'MARTÍNEZ', 'RAMÍREZ', 'lmartinez@senasa.gob.pe'),
+    ('62334455', 'GABRIEL', 'ALEJANDRO', 'CASTILLO', 'PÉREZ', 'gcastillo@senasa.gob.pe'),
+    ('53445566', 'CAROLINA', 'ISABEL', 'MENDOZA', 'GÓMEZ', 'cmendoza@senasa.gob.pe'),
+    ('74556677', 'ANDRÉS', 'FELIPE', 'GUTIÉRREZ', 'SALAZAR', 'agutierrez@senasa.gob.pe'),
+    ('55667788', 'VANESSA', 'PATRICIA', 'NAVARRO', 'TORO', 'vnavarro@senasa.gob.pe');
+
+INSERT INTO M_Dep (cod, nom, telFax, dirP)
+VALUES
+	('01',"SENASA-AMAZONAS", '041478503', "Jr. Dos de Mayo N° 620 -Chachapoyas"),
+    ('02',"SENASA-ANCASH", '043426863', "Prolongación Av. Raymundo S/N -Huaraz"),
+    ('03',"SENASA-APURIMAC", '083322343', "Jr. Puno Nro. 308 Abancay"),	
+    ('04',"SENASA-AREQUIPA", '054443179', "Km.9.5 Carretera a Yura - Arequipa"),	
+	('05',"SENASA-AYACUCHO", '066312376', "Av. Venezuela # 165 Canaán Alto-Ayacucho"),	
+	('06',"SENASA-CAJAMARCA", '076838049', "Carretera Km.55-Baños del Inca -Cajamarca"),	
+	('07',"SENASA-CUSCO", '084233191', "Av. Micaela Bastidas # 310-314 Cusco"),
+	('08',"SENASA-HUANCAVELICA", '067451490', "Av.Augusto B. Leguía 171-Ministerio de Agricultura");
+
+
+INSERT INTO M_Pro_Qui (cod, nom_pro_qui, uni_med, pre_uni)
+VALUES
+	('B3375.0005.9090', "GF-120 (CILINDRO DE 208 LT.)", "Unidad", 4455.36),
+	('B3375.0005.9089', "GF-120 (GALON DE 4 LT.)", "Unidad", 326.48);
+
+INSERT INTO M_Zon_Pro (cod_dep, cod_zon_pro, nom_zon_pro, dni_res, dni_res_tec)
+VALUES
+	('01', '01', "BAGUA GRANDE", '76543210', '67890123'),
+    ('01', '02', "CHACHAPOYAS", '52345678', '51234567' ), 
+    ('01', '03', "RODRÍGUEZ DE MENDOZA", '53456789', '60123456'), 
+    ('01', '04', "LUYA", '64567890', '78901234'),
+    ('01', '05', "BONGARÁ", '75678901', '79012345'),
+    ('01', '06', "UTCUBAMBA", '53456789', '60123456'),
+    
+    ('02', '01', "HUARAZ", '50123456', '62349678'),
+    ('02', '02', "CARHUAZ", '66789012', '73456789'),
+    ('02', '03', "YUNGAY", '67890123', '64567890'),
+    ('02', '04', "HUARI", '58901234', '66780012'),
+    ('02', '05', "RECUAY", '50123456', '62349678'),
+    ('02', '06', "AIJA", '79012345', '54678901'),
+    
+    ('03', '01', "ABANCAY", '64321098', '76540210'),
+    ('03', '02', "ABANCAY", '51234567', '68760432'),
+    ('03', '03', "CHALHUANCA", '64321098', '76540210'),
+    ('03', '04', "ANTABAMBA", '77654321', '65430109'),
+    ('03', '05', "COTABAMBAS", '68765432', '54301098'),
+    ('03', '06', "GRAU", '75432109', '67654321'),
+    
+    ('04', '01', "TAMBO", '73456887', '53456789'),
+    ('04', '02', "UCHUMAYO", '72844565', '84567890'),
+    ('04', '03', "EL CURAL", '58765432', '55678901'),
+    ('04', '04', "MAJES", '72675774', '62345678'),
+    ('04', '05', "VIRACO", '72675774', '62345678'),
+    ('04', '06', "AREQUIPA", '67654321', '66789012'),
+    
+    ('05', '01', "HUAMANGA", '63445566', '70987654'),
+    ('05', '02', "HUANTA", '73210987', '71098765'),
+    ('05', '03', "LA MAR", '51223344', '73210987'),
+    ('05', '04', "CANGALLO", '64556677', '72109876'),
+    ('05', '05', "VILCAS HUAMÁN", '51223344', '73210987'),
+    ('05', '06', "SUCRE", '72394455', '79887766'),
+    
+    ('06', '01', "CAJAMARCA", '75667788', '68776655'),
+    ('06', '02', "CELENDÍN", '79001122', '77665544'),
+    ('06', '03', "CHOTA", '66778899', '79847766'),
+    ('06', '04', "CONTUMAZÁ", '68990011', '74332211'),
+    ('06', '05', "CUTERVO", '77889900', '55443322'),
+    ('06', '06', "CUSCO", '68990011', '74332211'),
+    
+    ('07', '01', "QUISPICANCHI", '50112233', '68736655'),
+    ('07', '02', "PAUCARTAMBO", '64556977', '67695344'),
+    ('07', '03', "URUBAMBA", '61223344', '55241322'),
+    ('07', '04', "ANTA", '64556977', '67695344'),
+    ('07', '05', "LA CONVENCIÓN", '72334455', '74132211'),
+    ('07', '06', "CUSCO", '63448566', '66584233'),
+    
+    ('08', '01', "HUANCAVELICA", '55667788', '61223344'),
+    ('08', '02', "ACOBAMBA", '78990043', '62334455'),
+    ('08', '03', "ANGARAES", '79001154', '55667788'),
+    ('08', '04', "CASTROVIRREYNA", '50011265', '53445566'),
+    ('08', '05', "CHURCAMPA", '61122376', '74556677'),
+    ('08', '06', "HUAYTARÁ", '61122376', '74556677');
+
+    
+INSERT INTO T_Sol_Req (num, dni_res, cod_dep, mot, fec_cre)
+VALUES
+	('001', '76543210', '01', 'REQUERIMEINTO MATERIALES', '2023-01-15'),
+    ('002', '76543210', '01', 'REQUERIMEINTO MATERIALES', '2023-02-19'),
+    ('003', '76543210', '01', 'REQUERIMEINTO MATERIALES', '2023-03-21'),
+    ('004', '76543210', '01', 'REQUERIMEINTO MATERIALES', '2023-04-10'),
+    ('005', '76543210', '01', 'REQUERIMEINTO MATERIALES', '2023-05-08'),
+    ('006', '76543210', '01', 'REQUERIMEINTO MATERIALES', '2023-06-01'),
+    ('007', '76543210', '01', 'REQUERIMEINTO MATERIALES', '2023-06-30'),
+    ('008', '76543210', '01', 'REQUERIMEINTO MATERIALES', '2023-07-23'),
+    
+    ('001', '52345678', '01', 'REQUERIMEINTO MATERIALES', '2023-01-15'),
+    ('002', '52345678', '01', 'REQUERIMEINTO MATERIALES', '2023-02-28'),
+    ('003', '52345678', '01', 'REQUERIMEINTO MATERIALES', '2023-03-10'),
+    ('004', '52345678', '01', 'REQUERIMEINTO MATERIALES', '2023-04-05'), 
+    ('005', '52345678', '01', 'REQUERIMEINTO MATERIALES', '2023-05-20'),
+    ('006', '52345678', '01', 'REQUERIMEINTO MATERIALES', '2023-06-08'),
+    ('007', '52345678', '01', 'REQUERIMEINTO MATERIALES', '2023-07-03'),
+    ('008', '52345678', '01', 'REQUERIMEINTO MATERIALES', '2023-08-12'),
+    
+    ('001', '53456789', '01', 'REQUERIMIENTO MATERIALES', '2023-01-20'),
+    ('002', '53456789', '01', 'REQUERIMIENTO MATERIALES', '2023-02-15'),
+    ('003', '53456789', '01', 'REQUERIMIENTO MATERIALES', '2023-03-25'),
+    ('004', '53456789', '01', 'REQUERIMIENTO MATERIALES', '2023-04-10'), 
+    ('005', '53456789', '01', 'REQUERIMIENTO MATERIALES', '2023-05-05'),
+    ('006', '53456789', '01', 'REQUERIMIENTO MATERIALES', '2023-10-20'), -- aqui
+    ('007', '53456789', '01', 'REQUERIMIENTO MATERIALES', '2023-07-15'),
+    ('008', '53456789', '01', 'REQUERIMIENTO MATERIALES', '2023-08-05'),
+    
+    ('001', '64567890', '01', 'REQUERIMIENTO MATERIALES', '2023-01-25'),
+    ('002', '64567890', '01', 'REQUERIMIENTO MATERIALES', '2023-02-18'),
+    ('003', '64567890', '01', 'REQUERIMIENTO MATERIALES', '2023-03-30'),
+    ('004', '64567890', '01', 'REQUERIMIENTO MATERIALES', '2023-04-15'), 
+    ('005', '64567890', '01', 'REQUERIMIENTO MATERIALES', '2023-05-10'),
+    ('006', '64567890', '01', 'REQUERIMIENTO MATERIALES', '2023-06-25'),
+    ('007', '64567890', '01', 'REQUERIMIENTO MATERIALES', '2023-07-20'),
+    ('008', '64567890', '01', 'REQUERIMIENTO MATERIALES', '2023-08-10'),
+    
+    ('001', '75678901', '01', 'REQUERIMIENTO MATERIALES', '2023-01-30'),
+    ('002', '75678901', '01', 'REQUERIMIENTO MATERIALES', '2023-02-25'),
+    ('003', '75678901', '01', 'REQUERIMIENTO MATERIALES', '2023-03-15'),
+    ('004', '75678901', '01', 'REQUERIMIENTO MATERIALES', '2023-04-20'), 
+    ('005', '75678901', '01', 'REQUERIMIENTO MATERIALES', '2023-05-15'),
+    ('006', '75678901', '01', 'REQUERIMIENTO MATERIALES', '2023-06-30'),
+    ('007', '75678901', '01', 'REQUERIMIENTO MATERIALES', '2023-07-25'),
+    ('008', '75678901', '01', 'REQUERIMIENTO MATERIALES', '2023-08-15'),
+    
+    
+    ('001', '50123456', '02', 'REQUERIMIENTO MATERIALES', '2023-01-30'),
+    ('002', '50123456', '02', 'REQUERIMIENTO MATERIALES', '2023-02-18'),
+    ('003', '50123456', '02', 'REQUERIMIENTO MATERIALES', '2023-03-10'),
+    ('004', '50123456', '02', 'REQUERIMIENTO MATERIALES', '2023-04-25'), 
+    ('005', '50123456', '02', 'REQUERIMIENTO MATERIALES', '2023-05-20'),
+    ('006', '50123456', '02', 'REQUERIMIENTO MATERIALES', '2023-06-05'),
+    ('007', '50123456', '02', 'REQUERIMIENTO MATERIALES', '2023-07-15'),
+    ('008', '50123456', '02', 'REQUERIMIENTO MATERIALES', '2023-08-01'),
+    
+    ('001', '66789012', '02', 'REQUERIMIENTO MATERIALES', '2023-01-31'),
+    ('002', '66789012', '02', 'REQUERIMIENTO MATERIALES', '2023-02-19'),
+    ('003', '66789012', '02', 'REQUERIMIENTO MATERIALES', '2023-03-11'),
+    ('004', '66789012', '02', 'REQUERIMIENTO MATERIALES', '2023-04-26'), 
+    ('005', '66789012', '02', 'REQUERIMIENTO MATERIALES', '2023-05-21'),
+    ('006', '66789012', '02', 'REQUERIMIENTO MATERIALES', '2023-06-06'),
+    ('007', '66789012', '02', 'REQUERIMIENTO MATERIALES', '2023-07-16'),
+    ('008', '66789012', '02', 'REQUERIMIENTO MATERIALES', '2023-08-02'),
+    
+    ('001', '67890123', '02', 'REQUERIMIENTO MATERIALES', '2023-02-01'),
+    ('002', '67890123', '02', 'REQUERIMIENTO MATERIALES', '2023-02-20'),
+    ('003', '67890123', '02', 'REQUERIMIENTO MATERIALES', '2023-03-12'),
+    ('004', '67890123', '02', 'REQUERIMIENTO MATERIALES', '2023-04-27'), 
+    ('005', '67890123', '02', 'REQUERIMIENTO MATERIALES', '2023-05-22'),
+    ('006', '67890123', '02', 'REQUERIMIENTO MATERIALES', '2023-06-07'),
+    ('007', '67890123', '02', 'REQUERIMIENTO MATERIALES', '2023-07-17'),
+    ('008', '67890123', '02', 'REQUERIMIENTO MATERIALES', '2023-08-03'),
+    
+    ('001', '58901234', '02', 'REQUERIMIENTO MATERIALES', '2023-02-02'),
+    ('002', '58901234', '02', 'REQUERIMIENTO MATERIALES', '2023-02-21'),
+    ('003', '58901234', '02', 'REQUERIMIENTO MATERIALES', '2023-03-13'),
+    ('004', '58901234', '02', 'REQUERIMIENTO MATERIALES', '2023-04-28'), 
+    ('005', '58901234', '02', 'REQUERIMIENTO MATERIALES', '2023-05-23'),
+    ('006', '58901234', '02', 'REQUERIMIENTO MATERIALES', '2023-06-08'),
+    ('007', '58901234', '02', 'REQUERIMIENTO MATERIALES', '2023-07-18'),
+    ('008', '58901234', '02', 'REQUERIMIENTO MATERIALES', '2023-08-04'),
+    
+    ('001', '79012345', '02', 'REQUERIMIENTO MATERIALES', '2023-02-03'),
+    ('002', '79012345', '02', 'REQUERIMIENTO MATERIALES', '2023-02-22'),
+    ('003', '79012345', '02', 'REQUERIMIENTO MATERIALES', '2023-03-14'),
+    ('004', '79012345', '02', 'REQUERIMIENTO MATERIALES', '2023-04-29'), 
+    ('005', '79012345', '02', 'REQUERIMIENTO MATERIALES', '2023-05-24'),
+    ('006', '79012345', '02', 'REQUERIMIENTO MATERIALES', '2023-06-09'),
+    ('007', '79012345', '02', 'REQUERIMIENTO MATERIALES', '2023-07-19'),
+    ('008', '79012345', '02', 'REQUERIMIENTO MATERIALES', '2023-08-05'),
+    
+    
+    ('001', '64321098', '03', 'REQUERIMIENTO MATERIALES', '2023-02-03'),
+    ('002', '64321098', '03', 'REQUERIMIENTO MATERIALES', '2023-02-23'),
+    ('003', '64321098', '03', 'REQUERIMIENTO MATERIALES', '2023-03-15'),
+    ('004', '64321098', '03', 'REQUERIMIENTO MATERIALES', '2023-04-30'), 
+    ('005', '64321098', '03', 'REQUERIMIENTO MATERIALES', '2023-05-25'),
+    ('006', '64321098', '03', 'REQUERIMIENTO MATERIALES', '2023-06-10'),
+    ('007', '64321098', '03', 'REQUERIMIENTO MATERIALES', '2023-07-20'),
+    ('008', '64321098', '03', 'REQUERIMIENTO MATERIALES', '2023-08-06'),
+    
+    ('001', '51234567', '03', 'REQUERIMIENTO MATERIALES', '2023-02-04'),
+    ('002', '51234567', '03', 'REQUERIMIENTO MATERIALES', '2023-02-24'),
+    ('003', '51234567', '03', 'REQUERIMIENTO MATERIALES', '2023-03-16'),
+    ('004', '51234567', '03', 'REQUERIMIENTO MATERIALES', '2023-05-01'), 
+    ('005', '51234567', '03', 'REQUERIMIENTO MATERIALES', '2023-05-26'),
+    ('006', '51234567', '03', 'REQUERIMIENTO MATERIALES', '2023-06-11'),
+    ('007', '51234567', '03', 'REQUERIMIENTO MATERIALES', '2023-07-21'),
+    ('008', '51234567', '03', 'REQUERIMIENTO MATERIALES', '2023-08-07'),
+    
+    ('001', '77654321', '03', 'REQUERIMIENTO MATERIALES', '2023-02-05'),
+    ('002', '77654321', '03', 'REQUERIMIENTO MATERIALES', '2023-02-25'),
+    ('003', '77654321', '03', 'REQUERIMIENTO MATERIALES', '2023-03-17'),
+    ('004', '77654321', '03', 'REQUERIMIENTO MATERIALES', '2023-05-02'), 
+    ('005', '77654321', '03', 'REQUERIMIENTO MATERIALES', '2023-05-27'),
+    ('006', '77654321', '03', 'REQUERIMIENTO MATERIALES', '2023-06-12'),
+    ('007', '77654321', '03', 'REQUERIMIENTO MATERIALES', '2023-07-22'),
+    ('008', '77654321', '03', 'REQUERIMIENTO MATERIALES', '2023-08-08'),
+    
+    ('001', '68765432', '03', 'REQUERIMIENTO MATERIALES', '2023-02-06'),
+    ('002', '68765432', '03', 'REQUERIMIENTO MATERIALES', '2023-02-26'),
+    ('003', '68765432', '03', 'REQUERIMIENTO MATERIALES', '2023-03-18'),
+    ('004', '68765432', '03', 'REQUERIMIENTO MATERIALES', '2023-05-03'), 
+    ('005', '68765432', '03', 'REQUERIMIENTO MATERIALES', '2023-05-28'),
+    ('006', '68765432', '03', 'REQUERIMIENTO MATERIALES', '2023-06-13'),
+    ('007', '68765432', '03', 'REQUERIMIENTO MATERIALES', '2023-07-23'),
+    ('008', '68765432', '03', 'REQUERIMIENTO MATERIALES', '2023-08-09'),
+    
+    ('001', '75432109', '03', 'REQUERIMIENTO MATERIALES', '2023-02-07'),
+    ('002', '75432109', '03', 'REQUERIMIENTO MATERIALES', '2023-02-27'),
+    ('003', '75432109', '03', 'REQUERIMIENTO MATERIALES', '2023-03-19'),
+    ('004', '75432109', '03', 'REQUERIMIENTO MATERIALES', '2023-05-04'), 
+    ('005', '75432109', '03', 'REQUERIMIENTO MATERIALES', '2023-05-29'),
+    ('006', '75432109', '03', 'REQUERIMIENTO MATERIALES', '2023-06-14'),
+    ('007', '75432109', '03', 'REQUERIMIENTO MATERIALES', '2023-07-24'),
+    ('008', '75432109', '03', 'REQUERIMIENTO MATERIALES', '2023-08-10'),
+    
+    
+    ('001', '73456887', '04', 'REQUERIMIENTO MATERIALES', '2023-02-07'),
+    ('002', '73456887', '04', 'REQUERIMIENTO MATERIALES', '2023-02-27'),
+    ('003', '73456887', '04', 'REQUERIMIENTO MATERIALES', '2023-03-19'),
+    ('004', '73456887', '04', 'REQUERIMIENTO MATERIALES', '2023-05-04'), 
+    ('005', '73456887', '04', 'REQUERIMIENTO MATERIALES', '2023-05-29'),
+    ('006', '73456887', '04', 'REQUERIMIENTO MATERIALES', '2023-06-14'),
+    ('007', '73456887', '04', 'REQUERIMIENTO MATERIALES', '2023-07-24'),
+    ('008', '73456887', '04', 'REQUERIMIENTO MATERIALES', '2023-08-10'),
+    
+    ('001', '72844565', '04', 'REQUERIMIENTO MATERIALES', '2023-02-08'),
+    ('002', '72844565', '04', 'REQUERIMIENTO MATERIALES', '2023-02-28'),
+    ('003', '72844565', '04', 'REQUERIMIENTO MATERIALES', '2023-03-20'),
+    ('004', '72844565', '04', 'REQUERIMIENTO MATERIALES', '2023-05-05'), 
+    ('005', '72844565', '04', 'REQUERIMIENTO MATERIALES', '2023-05-30'),
+    ('006', '72844565', '04', 'REQUERIMIENTO MATERIALES', '2023-06-15'),
+    ('007', '72844565', '04', 'REQUERIMIENTO MATERIALES', '2023-07-25'),
+    ('008', '72844565', '04', 'REQUERIMIENTO MATERIALES', '2023-08-11'),
+    
+    ('001', '58765432', '04', 'REQUERIMIENTO MATERIALES', '2023-02-09'),
+    ('002', '58765432', '04', 'REQUERIMIENTO MATERIALES', '2023-02-19'),
+    ('003', '58765432', '04', 'REQUERIMIENTO MATERIALES', '2023-03-21'),
+    ('004', '58765432', '04', 'REQUERIMIENTO MATERIALES', '2023-05-06'), 
+    ('005', '58765432', '04', 'REQUERIMIENTO MATERIALES', '2023-05-31'),
+    ('006', '58765432', '04', 'REQUERIMIENTO MATERIALES', '2023-06-16'),
+    ('007', '58765432', '04', 'REQUERIMIENTO MATERIALES', '2023-07-26'),
+    ('008', '58765432', '04', 'REQUERIMIENTO MATERIALES', '2023-08-12'),
+    
+    ('001', '72675774', '04', 'REQUERIMIENTO MATERIALES', '2023-02-10'),
+    ('002', '72675774', '04', 'REQUERIMIENTO MATERIALES', '2023-03-01'),
+    ('003', '72675774', '04', 'REQUERIMIENTO MATERIALES', '2023-03-22'),
+    ('004', '72675774', '04', 'REQUERIMIENTO MATERIALES', '2023-05-07'), 
+    ('005', '72675774', '04', 'REQUERIMIENTO MATERIALES', '2023-06-01'),
+    ('006', '72675774', '04', 'REQUERIMIENTO MATERIALES', '2023-06-17'),
+    ('007', '72675774', '04', 'REQUERIMIENTO MATERIALES', '2023-07-27'),
+    ('008', '72675774', '04', 'REQUERIMIENTO MATERIALES', '2023-08-13'),
+    
+    ('001', '67654321', '04', 'REQUERIMIENTO MATERIALES', '2023-02-11'),
+    ('002', '67654321', '04', 'REQUERIMIENTO MATERIALES', '2023-03-02'),
+    ('003', '67654321', '04', 'REQUERIMIENTO MATERIALES', '2023-03-23'),
+    ('004', '67654321', '04', 'REQUERIMIENTO MATERIALES', '2023-05-08'), 
+    ('005', '67654321', '04', 'REQUERIMIENTO MATERIALES', '2023-06-02'),
+    ('006', '67654321', '04', 'REQUERIMIENTO MATERIALES', '2023-06-18'),
+    ('007', '67654321', '04', 'REQUERIMIENTO MATERIALES', '2023-07-28'),
+    ('008', '67654321', '04', 'REQUERIMIENTO MATERIALES', '2023-08-14'),
+    
+    
+    ('001', '63445566', '05', 'REQUERIMIENTO MATERIALES', '2023-02-07'),
+    ('002', '63445566', '05', 'REQUERIMIENTO MATERIALES', '2023-02-28'),
+    ('003', '63445566', '05', 'REQUERIMIENTO MATERIALES', '2023-03-21'),
+    ('004', '63445566', '05', 'REQUERIMIENTO MATERIALES', '2023-05-05'), 
+    ('005', '63445566', '05', 'REQUERIMIENTO MATERIALES', '2023-05-30'),
+    ('006', '63445566', '05', 'REQUERIMIENTO MATERIALES', '2023-06-15'),
+    ('007', '63445566', '05', 'REQUERIMIENTO MATERIALES', '2023-07-25'),
+    ('008', '63445566', '05', 'REQUERIMIENTO MATERIALES', '2023-08-11'),
+    
+    ('001', '73210987', '05', 'REQUERIMIENTO MATERIALES', '2023-02-08'),
+    ('002', '73210987', '05', 'REQUERIMIENTO MATERIALES', '2023-02-28'),
+    ('003', '73210987', '05', 'REQUERIMIENTO MATERIALES', '2023-03-22'),
+    ('004', '73210987', '05', 'REQUERIMIENTO MATERIALES', '2023-05-06'), 
+    ('005', '73210987', '05', 'REQUERIMIENTO MATERIALES', '2023-05-31'),
+    ('006', '73210987', '05', 'REQUERIMIENTO MATERIALES', '2023-06-16'),
+    ('007', '73210987', '05', 'REQUERIMIENTO MATERIALES', '2023-07-26'),
+    ('008', '73210987', '05', 'REQUERIMIENTO MATERIALES', '2023-08-12'),
+    
+    ('001', '51223344', '05', 'REQUERIMIENTO MATERIALES', '2023-02-09'),
+    ('002', '51223344', '05', 'REQUERIMIENTO MATERIALES', '2023-02-28'),
+    ('003', '51223344', '05', 'REQUERIMIENTO MATERIALES', '2023-03-21'),
+    ('004', '51223344', '05', 'REQUERIMIENTO MATERIALES', '2023-05-05'), 
+    ('005', '51223344', '05', 'REQUERIMIENTO MATERIALES', '2023-05-30'),
+    ('006', '51223344', '05', 'REQUERIMIENTO MATERIALES', '2023-06-15'),
+    ('007', '51223344', '05', 'REQUERIMIENTO MATERIALES', '2023-07-25'),
+    ('008', '51223344', '05', 'REQUERIMIENTO MATERIALES', '2023-08-11'),
+    
+    ('001', '64556677', '05', 'REQUERIMIENTO MATERIALES', '2023-02-10'),
+    ('002', '64556677', '05', 'REQUERIMIENTO MATERIALES', '2023-03-01'),
+    ('003', '64556677', '05', 'REQUERIMIENTO MATERIALES', '2023-03-22'),
+    ('004', '64556677', '05', 'REQUERIMIENTO MATERIALES', '2023-05-07'), 
+    ('005', '64556677', '05', 'REQUERIMIENTO MATERIALES', '2023-06-01'),
+    ('006', '64556677', '05', 'REQUERIMIENTO MATERIALES', '2023-06-17'),
+    ('007', '64556677', '05', 'REQUERIMIENTO MATERIALES', '2023-07-27'),
+    ('008', '64556677', '05', 'REQUERIMIENTO MATERIALES', '2023-08-13'),
+    
+    ('001', '72394455', '05', 'REQUERIMIENTO MATERIALES', '2023-02-11'),
+    ('002', '72394455', '05', 'REQUERIMIENTO MATERIALES', '2023-03-02'),
+    ('003', '72394455', '05', 'REQUERIMIENTO MATERIALES', '2023-03-23'),
+    ('004', '72394455', '05', 'REQUERIMIENTO MATERIALES', '2023-05-08'), 
+    ('005', '72394455', '05', 'REQUERIMIENTO MATERIALES', '2023-06-02'),
+    ('006', '72394455', '05', 'REQUERIMIENTO MATERIALES', '2023-06-18'),
+    ('007', '72394455', '05', 'REQUERIMIENTO MATERIALES', '2023-07-28'),
+    ('008', '72394455', '05', 'REQUERIMIENTO MATERIALES', '2023-08-14'),
+    
+    
+    ('001', '75667788', '06', 'REQUERIMIENTO MATERIALES', '2023-02-11'),
+    ('002', '75667788', '06', 'REQUERIMIENTO MATERIALES', '2023-03-02'),
+    ('003', '75667788', '06', 'REQUERIMIENTO MATERIALES', '2023-03-23'),
+    ('004', '75667788', '06', 'REQUERIMIENTO MATERIALES', '2023-05-08'), 
+    ('005', '75667788', '06', 'REQUERIMIENTO MATERIALES', '2023-06-02'),
+    ('006', '75667788', '06', 'REQUERIMIENTO MATERIALES', '2023-06-18'),
+    ('007', '75667788', '06', 'REQUERIMIENTO MATERIALES', '2023-07-28'),
+    ('008', '75667788', '06', 'REQUERIMIENTO MATERIALES', '2023-08-14'),
+    
+    ('001', '79001122', '06', 'REQUERIMIENTO MATERIALES', '2023-02-12'),
+    ('002', '79001122', '06', 'REQUERIMIENTO MATERIALES', '2023-03-03'),
+    ('003', '79001122', '06', 'REQUERIMIENTO MATERIALES', '2023-03-24'),
+    ('004', '79001122', '06', 'REQUERIMIENTO MATERIALES', '2023-05-09'), 
+    ('005', '79001122', '06', 'REQUERIMIENTO MATERIALES', '2023-06-03'),
+    ('006', '79001122', '06', 'REQUERIMIENTO MATERIALES', '2023-06-19'),
+    ('007', '79001122', '06', 'REQUERIMIENTO MATERIALES', '2023-07-29'),
+    ('008', '79001122', '06', 'REQUERIMIENTO MATERIALES', '2023-08-15'),
+    
+    ('001', '66778899', '06', 'REQUERIMIENTO MATERIALES', '2023-02-13'),
+    ('002', '66778899', '06', 'REQUERIMIENTO MATERIALES', '2023-03-04'),
+    ('003', '66778899', '06', 'REQUERIMIENTO MATERIALES', '2023-03-25'),
+    ('004', '66778899', '06', 'REQUERIMIENTO MATERIALES', '2023-05-10'), 
+    ('005', '66778899', '06', 'REQUERIMIENTO MATERIALES', '2023-06-04'),
+    ('006', '66778899', '06', 'REQUERIMIENTO MATERIALES', '2023-06-20'),
+    ('007', '66778899', '06', 'REQUERIMIENTO MATERIALES', '2023-07-30'),
+    ('008', '66778899', '06', 'REQUERIMIENTO MATERIALES', '2023-08-16'),
+    
+    ('001', '68990011', '06', 'REQUERIMIENTO MATERIALES', '2023-02-14'),
+    ('002', '68990011', '06', 'REQUERIMIENTO MATERIALES', '2023-03-05'),
+    ('003', '68990011', '06', 'REQUERIMIENTO MATERIALES', '2023-03-26'),
+    ('004', '68990011', '06', 'REQUERIMIENTO MATERIALES', '2023-05-11'), 
+    ('005', '68990011', '06', 'REQUERIMIENTO MATERIALES', '2023-06-05'),
+    ('006', '68990011', '06', 'REQUERIMIENTO MATERIALES', '2023-06-21'),
+    ('007', '68990011', '06', 'REQUERIMIENTO MATERIALES', '2023-07-31'),
+    ('008', '68990011', '06', 'REQUERIMIENTO MATERIALES', '2023-08-17'),
+    
+    ('001', '77889900', '06', 'REQUERIMIENTO MATERIALES', '2023-02-15'),
+    ('002', '77889900', '06', 'REQUERIMIENTO MATERIALES', '2023-03-06'),
+    ('003', '77889900', '06', 'REQUERIMIENTO MATERIALES', '2023-03-27'),
+    ('004', '77889900', '06', 'REQUERIMIENTO MATERIALES', '2023-05-12'), 
+    ('005', '77889900', '06', 'REQUERIMIENTO MATERIALES', '2023-06-06'),
+    ('006', '77889900', '06', 'REQUERIMIENTO MATERIALES', '2023-06-22'),
+    ('007', '77889900', '06', 'REQUERIMIENTO MATERIALES', '2023-08-01'),
+    ('008', '77889900', '06', 'REQUERIMIENTO MATERIALES', '2023-08-18'),
+    
+    
+    ('001', '50112233', '07', 'REQUERIMIENTO MATERIALES', '2023-02-15'),
+    ('002', '50112233', '07', 'REQUERIMIENTO MATERIALES', '2023-03-06'),
+    ('003', '50112233', '07', 'REQUERIMIENTO MATERIALES', '2023-03-27'),
+    ('004', '50112233', '07', 'REQUERIMIENTO MATERIALES', '2023-05-12'), 
+    ('005', '50112233', '07', 'REQUERIMIENTO MATERIALES', '2023-06-06'),
+    ('006', '50112233', '07', 'REQUERIMIENTO MATERIALES', '2023-06-22'),
+    ('007', '50112233', '07', 'REQUERIMIENTO MATERIALES', '2023-08-01'),
+    ('008', '50112233', '07', 'REQUERIMIENTO MATERIALES', '2023-08-18'),
+    
+    ('001', '64556977', '07', 'REQUERIMIENTO MATERIALES', '2023-02-16'),
+    ('002', '64556977', '07', 'REQUERIMIENTO MATERIALES', '2023-03-07'),
+    ('003', '64556977', '07', 'REQUERIMIENTO MATERIALES', '2023-03-28'),
+    ('004', '64556977', '07', 'REQUERIMIENTO MATERIALES', '2023-05-13'), 
+    ('005', '64556977', '07', 'REQUERIMIENTO MATERIALES', '2023-06-07'),
+    ('006', '64556977', '07', 'REQUERIMIENTO MATERIALES', '2023-06-23'),
+    ('007', '64556977', '07', 'REQUERIMIENTO MATERIALES', '2023-08-02'),
+    ('008', '64556977', '07', 'REQUERIMIENTO MATERIALES', '2023-08-19'),
+    
+    ('001', '61223344', '07', 'REQUERIMIENTO MATERIALES', '2023-02-17'),
+    ('002', '61223344', '07', 'REQUERIMIENTO MATERIALES', '2023-03-08'),
+    ('003', '61223344', '07', 'REQUERIMIENTO MATERIALES', '2023-03-29'),
+    ('004', '61223344', '07', 'REQUERIMIENTO MATERIALES', '2023-05-14'), 
+    ('005', '61223344', '07', 'REQUERIMIENTO MATERIALES', '2023-06-08'),
+    ('006', '61223344', '07', 'REQUERIMIENTO MATERIALES', '2023-06-24'),
+    ('007', '61223344', '07', 'REQUERIMIENTO MATERIALES', '2023-08-03'),
+    ('008', '61223344', '07', 'REQUERIMIENTO MATERIALES', '2023-08-20'),
+    
+    ('001', '72334455', '07', 'REQUERIMIENTO MATERIALES', '2023-02-18'),
+    ('002', '72334455', '07', 'REQUERIMIENTO MATERIALES', '2023-03-09'),
+    ('003', '72334455', '07', 'REQUERIMIENTO MATERIALES', '2023-03-30'),
+    ('004', '72334455', '07', 'REQUERIMIENTO MATERIALES', '2023-05-15'), 
+    ('005', '72334455', '07', 'REQUERIMIENTO MATERIALES', '2023-06-09'),
+    ('006', '72334455', '07', 'REQUERIMIENTO MATERIALES', '2023-06-25'),
+    ('007', '72334455', '07', 'REQUERIMIENTO MATERIALES', '2023-08-04'),
+    ('008', '72334455', '07', 'REQUERIMIENTO MATERIALES', '2023-08-21'),
+    
+    ('001', '63448566', '07', 'REQUERIMIENTO MATERIALES', '2023-02-19'),
+    ('002', '63448566', '07', 'REQUERIMIENTO MATERIALES', '2023-03-10'),
+    ('003', '63448566', '07', 'REQUERIMIENTO MATERIALES', '2023-03-31'),
+    ('004', '63448566', '07', 'REQUERIMIENTO MATERIALES', '2023-05-16'), 
+    ('005', '63448566', '07', 'REQUERIMIENTO MATERIALES', '2023-06-10'),
+    ('006', '63448566', '07', 'REQUERIMIENTO MATERIALES', '2023-06-26'),
+    ('007', '63448566', '07', 'REQUERIMIENTO MATERIALES', '2023-08-05'),
+    ('008', '63448566', '07', 'REQUERIMIENTO MATERIALES', '2023-08-22'),
+    
+    
+    ('001', '55667788', '08', 'REQUERIMIENTO MATERIALES', '2023-02-19'),
+    ('002', '55667788', '08', 'REQUERIMIENTO MATERIALES', '2023-03-10'),
+    ('003', '55667788', '08', 'REQUERIMIENTO MATERIALES', '2023-03-31'),
+    ('004', '55667788', '08', 'REQUERIMIENTO MATERIALES', '2023-05-16'), 
+    ('005', '55667788', '08', 'REQUERIMIENTO MATERIALES', '2023-06-10'),
+    ('006', '55667788', '08', 'REQUERIMIENTO MATERIALES', '2023-06-26'),
+    ('007', '55667788', '08', 'REQUERIMIENTO MATERIALES', '2023-08-05'),
+    ('008', '55667788', '08', 'REQUERIMIENTO MATERIALES', '2023-08-22'),
+    
+    ('001', '78990043', '08', 'REQUERIMIENTO MATERIALES', '2023-02-20'),
+    ('002', '78990043', '08', 'REQUERIMIENTO MATERIALES', '2023-03-11'),
+    ('003', '78990043', '08', 'REQUERIMIENTO MATERIALES', '2023-04-01'),
+    ('004', '78990043', '08', 'REQUERIMIENTO MATERIALES', '2023-05-17'), 
+    ('005', '78990043', '08', 'REQUERIMIENTO MATERIALES', '2023-06-11'),
+    ('006', '78990043', '08', 'REQUERIMIENTO MATERIALES', '2023-06-27'),
+    ('007', '78990043', '08', 'REQUERIMIENTO MATERIALES', '2023-08-06'),
+    ('008', '78990043', '08', 'REQUERIMIENTO MATERIALES', '2023-08-23'),
+    
+    ('001', '79001154', '08', 'REQUERIMIENTO MATERIALES', '2023-02-21'),
+    ('002', '79001154', '08', 'REQUERIMIENTO MATERIALES', '2023-03-12'),
+    ('003', '79001154', '08', 'REQUERIMIENTO MATERIALES', '2023-04-02'),
+    ('004', '79001154', '08', 'REQUERIMIENTO MATERIALES', '2023-05-18'), 
+    ('005', '79001154', '08', 'REQUERIMIENTO MATERIALES', '2023-06-12'),
+    ('006', '79001154', '08', 'REQUERIMIENTO MATERIALES', '2023-06-28'),
+    ('007', '79001154', '08', 'REQUERIMIENTO MATERIALES', '2023-08-07'),
+    ('008', '79001154', '08', 'REQUERIMIENTO MATERIALES', '2023-08-24'),
+    
+    ('001', '50011265', '08', 'REQUERIMIENTO MATERIALES', '2023-02-22'),
+    ('002', '50011265', '08', 'REQUERIMIENTO MATERIALES', '2023-03-13'),
+    ('003', '50011265', '08', 'REQUERIMIENTO MATERIALES', '2023-04-03'),
+    ('004', '50011265', '08', 'REQUERIMIENTO MATERIALES', '2023-05-19'), 
+    ('005', '50011265', '08', 'REQUERIMIENTO MATERIALES', '2023-06-13'),
+    ('006', '50011265', '08', 'REQUERIMIENTO MATERIALES', '2023-06-29'),
+    ('007', '50011265', '08', 'REQUERIMIENTO MATERIALES', '2023-08-08'),
+    ('008', '50011265', '08', 'REQUERIMIENTO MATERIALES', '2023-08-25'),
+    
+    ('001', '61122376', '08', 'REQUERIMIENTO MATERIALES', '2023-02-23'),
+    ('002', '61122376', '08', 'REQUERIMIENTO MATERIALES', '2023-03-14'),
+    ('003', '61122376', '08', 'REQUERIMIENTO MATERIALES', '2023-04-04'),
+    ('004', '61122376', '08', 'REQUERIMIENTO MATERIALES', '2023-05-20'), 
+    ('005', '61122376', '08', 'REQUERIMIENTO MATERIALES', '2023-06-14'),
+    ('006', '61122376', '08', 'REQUERIMIENTO MATERIALES', '2023-06-30'),
+    ('007', '61122376', '08', 'REQUERIMIENTO MATERIALES', '2023-08-09'),
+    ('008', '61122376', '08', 'REQUERIMIENTO MATERIALES', '2023-08-26');
+    
+    
+INSERT INTO T_Det_Sol_Req (num_sol_req, dni_res_sol_req, cod_dep_sol_req, cod_pro, cod_zon_uso_pro, can)
+VALUES
+	('001', '76543210', '01', 'B3375.0005.9090', '01', 5),
+    ('002', '76543210', '01', 'B3375.0005.9089', '01', 10),
+    ('003', '76543210', '01', 'B3375.0005.9090', '01', 4),
+    ('004', '76543210', '01', 'B3375.0005.9090', '01', 6),
+    ('005', '76543210', '01', 'B3375.0005.9089', '01', 21),
+    ('006', '76543210', '01', 'B3375.0005.9090', '01', 7),
+    ('007', '76543210', '01', 'B3375.0005.9090', '01', 8),
+	('008', '76543210', '01', 'B3375.0005.9089', '01', 15),
+	    
+    ('001', '52345678', '01', 'B3375.0005.9090', '02', 10),
+    ('002', '52345678', '01', 'B3375.0005.9089', '02', 9),
+    ('003', '52345678', '01', 'B3375.0005.9090', '02', 5),
+    ('004', '52345678', '01', 'B3375.0005.9090', '02', 6),
+    ('005', '52345678', '01', 'B3375.0005.9089', '02', 17),
+    ('006', '52345678', '01', 'B3375.0005.9090', '02', 6),
+    ('007', '52345678', '01', 'B3375.0005.9090', '02', 9),
+	('008', '52345678', '01', 'B3375.0005.9089', '02', 11),
+    
+    ('001', '53456789', '01', 'B3375.0005.9089', '03', 10),
+    ('002', '53456789', '01', 'B3375.0005.9090', '03', 7),
+    ('003', '53456789', '01', 'B3375.0005.9090', '03', 5),
+    ('004', '53456789', '01', 'B3375.0005.9090', '03', 6),
+    ('005', '53456789', '01', 'B3375.0005.9089', '03', 17),
+    ('006', '53456789', '01', 'B3375.0005.9090', '03', 6),
+    ('007', '53456789', '01', 'B3375.0005.9090', '03', 9),
+	('008', '53456789', '01', 'B3375.0005.9090', '03', 8),
+    ('006', '53456789', '01', 'B3375.0005.9089', '06', 15),
+    ('007', '53456789', '01', 'B3375.0005.9089', '06', 10),
+	('008', '53456789', '01', 'B3375.0005.9089', '06', 12),
+    
+    ('001', '64567890', '01', 'B3375.0005.9090', '04', 7),
+    ('002', '64567890', '01', 'B3375.0005.9089', '04', 8),
+    ('003', '64567890', '01', 'B3375.0005.9090', '04', 4),
+    ('004', '64567890', '01', 'B3375.0005.9090', '04', 9),
+    ('005', '64567890', '01', 'B3375.0005.9089', '04', 13),
+    ('006', '64567890', '01', 'B3375.0005.9090', '04', 5),
+    ('007', '64567890', '01', 'B3375.0005.9090', '04', 6),
+	('008', '64567890', '01', 'B3375.0005.9089', '04', 11),
+    
+    ('001', '75678901', '01', 'B3375.0005.9089', '05', 8),
+    ('002', '75678901', '01', 'B3375.0005.9089', '05', 5),
+    ('003', '75678901', '01', 'B3375.0005.9090', '05', 6),
+    ('004', '75678901', '01', 'B3375.0005.9090', '05', 4),
+    ('005', '75678901', '01', 'B3375.0005.9089', '05', 12),
+    ('006', '75678901', '01', 'B3375.0005.9090', '05', 6),
+    ('007', '75678901', '01', 'B3375.0005.9090', '05', 8),
+	('008', '75678901', '01', 'B3375.0005.9089', '05', 14),
+    
+    
+    
+    ('001', '50123456', '02', 'B3375.0005.9089', '01', 8),
+    ('002', '50123456', '02', 'B3375.0005.9089', '01', 5),
+    ('003', '50123456', '02', 'B3375.0005.9090', '01', 6),
+    ('004', '50123456', '02', 'B3375.0005.9090', '01', 4),
+    ('005', '50123456', '02', 'B3375.0005.9090', '01', 6),
+    ('006', '50123456', '02', 'B3375.0005.9090', '01', 6),
+    ('007', '50123456', '02', 'B3375.0005.9090', '01', 8),
+	('008', '50123456', '02', 'B3375.0005.9089', '01', 14),
+    ('003', '50123456', '02', 'B3375.0005.9090', '05', 4),
+    ('004', '50123456', '02', 'B3375.0005.9089', '05', 10),
+    ('005', '50123456', '02', 'B3375.0005.9089', '05', 12),
+    
+    ('001', '66789012', '02', 'B3375.0005.9089', '02', 8),
+    ('002', '66789012', '02', 'B3375.0005.9089', '02', 5),
+    ('003', '66789012', '02', 'B3375.0005.9090', '02', 5),
+    ('004', '66789012', '02', 'B3375.0005.9090', '02', 3),
+    ('005', '66789012', '02', 'B3375.0005.9089', '02', 11),
+    ('006', '66789012', '02', 'B3375.0005.9090', '02', 6),
+    ('007', '66789012', '02', 'B3375.0005.9090', '02', 5),
+	('008', '66789012', '02', 'B3375.0005.9089', '02', 14),
+    
+    ('001', '67890123', '02', 'B3375.0005.9089', '03', 10),
+    ('002', '67890123', '02', 'B3375.0005.9089', '03', 6),
+    ('003', '67890123', '02', 'B3375.0005.9090', '03', 4),
+    ('004', '67890123', '02', 'B3375.0005.9090', '03', 5),
+    ('005', '67890123', '02', 'B3375.0005.9089', '03', 9),
+    ('006', '67890123', '02', 'B3375.0005.9090', '03', 3),
+    ('007', '67890123', '02', 'B3375.0005.9090', '03', 5),
+	('008', '67890123', '02', 'B3375.0005.9089', '03', 16),
+    
+    ('001', '58901234', '02', 'B3375.0005.9090', '04', 8),
+    ('002', '58901234', '02', 'B3375.0005.9089', '04', 6),
+    ('003', '58901234', '02', 'B3375.0005.9090', '04', 7),
+    ('004', '58901234', '02', 'B3375.0005.9090', '04', 6),
+    ('005', '58901234', '02', 'B3375.0005.9089', '04', 10),
+    ('006', '58901234', '02', 'B3375.0005.9090', '04', 4),
+    ('007', '58901234', '02', 'B3375.0005.9090', '04', 5),
+	('008', '58901234', '02', 'B3375.0005.9090', '04', 6),
+    
+    ('001', '79012345', '02', 'B3375.0005.9090', '06', 7),
+    ('002', '79012345', '02', 'B3375.0005.9090', '06', 6),
+    ('003', '79012345', '02', 'B3375.0005.9090', '06', 7),
+    ('004', '79012345', '02', 'B3375.0005.9090', '06', 6),
+    ('005', '79012345', '02', 'B3375.0005.9089', '06', 11),
+    ('006', '79012345', '02', 'B3375.0005.9090', '06', 5),
+    ('007', '79012345', '02', 'B3375.0005.9090', '06', 5),
+	('008', '79012345', '02', 'B3375.0005.9090', '06', 6),
+    
+    
+    ('001', '64321098', '03', 'B3375.0005.9090', '01', 8),
+    ('002', '64321098', '03', 'B3375.0005.9090', '01', 6),
+    ('003', '64321098', '03', 'B3375.0005.9090', '01', 5),
+    ('004', '64321098', '03', 'B3375.0005.9090', '01', 6),
+    ('005', '64321098', '03', 'B3375.0005.9089', '01', 12),
+    ('006', '64321098', '03', 'B3375.0005.9090', '01', 5),
+    ('007', '64321098', '03', 'B3375.0005.9090', '01', 5),
+	('008', '64321098', '03', 'B3375.0005.9090', '01', 6),
+    ('001', '64321098', '03', 'B3375.0005.9089', '03', 11),
+    ('002', '64321098', '03', 'B3375.0005.9089', '03', 9),
+    ('003', '64321098', '03', 'B3375.0005.9089', '03', 10),
+    
+    ('001', '51234567', '03', 'B3375.0005.9090', '02', 7),
+    ('002', '51234567', '03', 'B3375.0005.9090', '02', 5),
+    ('003', '51234567', '03', 'B3375.0005.9090', '02', 5),
+    ('004', '51234567', '03', 'B3375.0005.9090', '02', 7),
+    ('005', '51234567', '03', 'B3375.0005.9089', '02', 12),
+    ('006', '51234567', '03', 'B3375.0005.9090', '02', 6),
+    ('007', '51234567', '03', 'B3375.0005.9090', '02', 6),
+	('008', '51234567', '03', 'B3375.0005.9090', '02', 4),
+    
+    ('001', '77654321', '03', 'B3375.0005.9089', '04', 11),
+    ('002', '77654321', '03', 'B3375.0005.9090', '04', 5),
+    ('003', '77654321', '03', 'B3375.0005.9090', '04', 8),
+    ('004', '77654321', '03', 'B3375.0005.9090', '04', 7),
+    ('005', '77654321', '03', 'B3375.0005.9089', '04', 12),
+    ('006', '77654321', '03', 'B3375.0005.9090', '04', 6),
+    ('007', '77654321', '03', 'B3375.0005.9090', '04', 5),
+	('008', '77654321', '03', 'B3375.0005.9089', '04', 13),
+    
+    ('001', '68765432', '03', 'B3375.0005.9089', '05', 11),
+    ('002', '68765432', '03', 'B3375.0005.9090', '05', 4),
+    ('003', '68765432', '03', 'B3375.0005.9090', '05', 8),
+    ('004', '68765432', '03', 'B3375.0005.9090', '05', 7),
+    ('005', '68765432', '03', 'B3375.0005.9090', '05', 6),
+    ('006', '68765432', '03', 'B3375.0005.9089', '05', 15),
+    ('007', '68765432', '03', 'B3375.0005.9089', '05', 16),
+	('008', '68765432', '03', 'B3375.0005.9089', '05', 13),
+    
+    ('001', '75432109', '03', 'B3375.0005.9090', '06', 7),
+    ('002', '75432109', '03', 'B3375.0005.9090', '06', 9),
+    ('003', '75432109', '03', 'B3375.0005.9090', '06', 8),
+    ('004', '75432109', '03', 'B3375.0005.9090', '06', 7),
+    ('005', '75432109', '03', 'B3375.0005.9090', '06', 6),
+    ('006', '75432109', '03', 'B3375.0005.9090', '06', 4),
+    ('007', '75432109', '03', 'B3375.0005.9090', '06', 6),
+	('008', '75432109', '03', 'B3375.0005.9090', '06', 5),
+    
+    
+    ('001', '73456887', '04', 'B3375.0005.9089', '01', 13),
+    ('002', '73456887', '04', 'B3375.0005.9090', '01', 9),
+    ('003', '73456887', '04', 'B3375.0005.9089', '01', 12),
+    ('004', '73456887', '04', 'B3375.0005.9090', '01', 7),
+    ('005', '73456887', '04', 'B3375.0005.9089', '01', 11),
+    ('006', '73456887', '04', 'B3375.0005.9090', '01', 4),
+    ('007', '73456887', '04', 'B3375.0005.9089', '01', 10),
+	('008', '73456887', '04', 'B3375.0005.9090', '01', 5),
+    
+    ('001', '72844565', '04', 'B3375.0005.9090', '02', 7),
+    ('002', '72844565', '04', 'B3375.0005.9090', '02', 9),
+    ('003', '72844565', '04', 'B3375.0005.9090', '02', 6),
+    ('004', '72844565', '04', 'B3375.0005.9090', '02', 7),
+    ('005', '72844565', '04', 'B3375.0005.9089', '02', 15),
+    ('006', '72844565', '04', 'B3375.0005.9090', '02', 4),
+    ('007', '72844565', '04', 'B3375.0005.9090', '02', 6),
+	('008', '72844565', '04', 'B3375.0005.9090', '02', 5),
+    
+    ('001', '58765432', '04', 'B3375.0005.9090', '03', 7),
+    ('002', '58765432', '04', 'B3375.0005.9089', '03', 9),
+    ('003', '58765432', '04', 'B3375.0005.9090', '03', 6),
+    ('004', '58765432', '04', 'B3375.0005.9090', '03', 7),
+    ('005', '58765432', '04', 'B3375.0005.9090', '03', 8),
+    ('006', '58765432', '04', 'B3375.0005.9090', '03', 8),
+    ('007', '58765432', '04', 'B3375.0005.9090', '03', 6),
+	('008', '58765432', '04', 'B3375.0005.9090', '03', 5),
+    
+    ('001', '72675774', '04', 'B3375.0005.9090', '04', 7),
+    ('002', '72675774', '04', 'B3375.0005.9090', '04', 5),
+    ('003', '72675774', '04', 'B3375.0005.9090', '04', 6),
+    ('004', '72675774', '04', 'B3375.0005.9090', '04', 7),
+    ('005', '72675774', '04', 'B3375.0005.9090', '04', 8),
+    ('006', '72675774', '04', 'B3375.0005.9090', '04', 4),
+    ('007', '72675774', '04', 'B3375.0005.9090', '04', 6),
+	('008', '72675774', '04', 'B3375.0005.9090', '04', 5),
+    ('005', '72675774', '04', 'B3375.0005.9089', '05', 10),
+    ('006', '72675774', '04', 'B3375.0005.9089', '05', 12),
+    ('007', '72675774', '04', 'B3375.0005.9089', '05', 11),
+    
+    ('001', '67654321', '04', 'B3375.0005.9090', '06', 7),
+    ('002', '67654321', '04', 'B3375.0005.9090', '06', 5),
+    ('003', '67654321', '04', 'B3375.0005.9090', '06', 6),
+    ('004', '67654321', '04', 'B3375.0005.9089', '06', 12),
+    ('005', '67654321', '04', 'B3375.0005.9089', '06', 10),
+    ('006', '67654321', '04', 'B3375.0005.9090', '06', 4),
+    ('007', '67654321', '04', 'B3375.0005.9090', '06', 6),
+	('008', '67654321', '04', 'B3375.0005.9090', '06', 5),
+    
+    
+    ('001', '63445566', '05', 'B3375.0005.9090', '01', 7),
+    ('002', '63445566', '05', 'B3375.0005.9090', '01', 5),
+    ('003', '63445566', '05', 'B3375.0005.9090', '01', 6),
+    ('004', '63445566', '05', 'B3375.0005.9089', '01', 12),
+    ('005', '63445566', '05', 'B3375.0005.9089', '01', 10),
+    ('006', '63445566', '05', 'B3375.0005.9090', '01', 4),
+    ('007', '63445566', '05', 'B3375.0005.9090', '01', 6),
+	('008', '63445566', '05', 'B3375.0005.9090', '01', 5),
+    
+    ('001', '73210987', '05', 'B3375.0005.9090', '02', 7),
+    ('002', '73210987', '05', 'B3375.0005.9090', '02', 5),
+    ('003', '73210987', '05', 'B3375.0005.9090', '02', 6),
+    ('004', '73210987', '05', 'B3375.0005.9089', '02', 12),
+    ('005', '73210987', '05', 'B3375.0005.9089', '02', 10),
+    ('006', '73210987', '05', 'B3375.0005.9090', '02', 4),
+    ('007', '73210987', '05', 'B3375.0005.9090', '02', 6),
+	('008', '73210987', '05', 'B3375.0005.9090', '02', 5),
+    
+    ('001', '51223344', '05', 'B3375.0005.9090', '03', 7),
+    ('002', '51223344', '05', 'B3375.0005.9090', '03', 5),
+    ('003', '51223344', '05', 'B3375.0005.9090', '03', 6),
+    ('004', '51223344', '05', 'B3375.0005.9090', '03', 5),
+    ('005', '51223344', '05', 'B3375.0005.9090', '03', 4),
+    ('006', '51223344', '05', 'B3375.0005.9090', '03', 4),
+    ('007', '51223344', '05', 'B3375.0005.9090', '03', 6),
+	('008', '51223344', '05', 'B3375.0005.9090', '03', 5),
+    ('003', '51223344', '05', 'B3375.0005.9089', '05', 10),
+    ('004', '51223344', '05', 'B3375.0005.9089', '05', 11),
+    ('005', '51223344', '05', 'B3375.0005.9089', '05', 12),
+    
+    ('001', '64556677', '05', 'B3375.0005.9090', '04', 7),
+    ('002', '64556677', '05', 'B3375.0005.9090', '04', 5),
+    ('003', '64556677', '05', 'B3375.0005.9089', '04', 12),
+    ('004', '64556677', '05', 'B3375.0005.9090', '04', 8),
+    ('005', '64556677', '05', 'B3375.0005.9090', '04', 7),
+    ('006', '64556677', '05', 'B3375.0005.9089', '04', 15),
+    ('007', '64556677', '05', 'B3375.0005.9090', '04', 6),
+	('008', '64556677', '05', 'B3375.0005.9090', '04', 5),
+    
+    ('001', '72394455', '05', 'B3375.0005.9090', '06', 7),
+    ('002', '72394455', '05', 'B3375.0005.9090', '06', 5),
+    ('003', '72394455', '05', 'B3375.0005.9090', '06', 6),
+    ('004', '72394455', '05', 'B3375.0005.9090', '06', 8),
+    ('005', '72394455', '05', 'B3375.0005.9090', '06', 7),
+    ('006', '72394455', '05', 'B3375.0005.9089', '06', 15),
+    ('007', '72394455', '05', 'B3375.0005.9090', '06', 6),
+	('008', '72394455', '05', 'B3375.0005.9090', '06', 4),
+      
+    
+    ('001', '75667788', '06', 'B3375.0005.9090', '01', 7),
+    ('002', '75667788', '06', 'B3375.0005.9089', '01', 12),
+    ('003', '75667788', '06', 'B3375.0005.9090', '01', 6),
+    ('004', '75667788', '06', 'B3375.0005.9090', '01', 8),
+    ('005', '75667788', '06', 'B3375.0005.9090', '01', 7),
+    ('006', '75667788', '06', 'B3375.0005.9089', '01', 15),
+    ('007', '75667788', '06', 'B3375.0005.9090', '01', 6),
+	('008', '75667788', '06', 'B3375.0005.9089', '01', 16),
+    
+    ('001', '79001122', '06', 'B3375.0005.9090', '02', 7),
+    ('002', '79001122', '06', 'B3375.0005.9090', '02', 6),
+    ('003', '79001122', '06', 'B3375.0005.9090', '02', 6),
+    ('004', '79001122', '06', 'B3375.0005.9090', '02', 8),
+    ('005', '79001122', '06', 'B3375.0005.9090', '02', 7),
+    ('006', '79001122', '06', 'B3375.0005.9090', '02', 7),
+    ('007', '79001122', '06', 'B3375.0005.9090', '02', 6),
+	('008', '79001122', '06', 'B3375.0005.9090', '02', 4),
+    
+    ('001', '66778899', '06', 'B3375.0005.9089', '03', 11),
+    ('002', '66778899', '06', 'B3375.0005.9090', '03', 6),
+    ('003', '66778899', '06', 'B3375.0005.9089', '03', 13),
+    ('004', '66778899', '06', 'B3375.0005.9089', '03', 12),
+    ('005', '66778899', '06', 'B3375.0005.9090', '03', 7),
+    ('006', '66778899', '06', 'B3375.0005.9089', '03', 16),
+    ('007', '66778899', '06', 'B3375.0005.9090', '03', 6),
+	('008', '66778899', '06', 'B3375.0005.9089', '03', 10),
+    
+    ('001', '68990011', '06', 'B3375.0005.9090', '04', 5),
+    ('002', '68990011', '06', 'B3375.0005.9090', '04', 6),
+    ('003', '68990011', '06', 'B3375.0005.9090', '04', 7),
+    ('004', '68990011', '06', 'B3375.0005.9090', '04', 8),
+    ('005', '68990011', '06', 'B3375.0005.9090', '04', 7),
+    ('006', '68990011', '06', 'B3375.0005.9090', '04', 8),
+    ('007', '68990011', '06', 'B3375.0005.9090', '04', 6),
+	('008', '68990011', '06', 'B3375.0005.9090', '04', 7),
+    ('002', '68990011', '06', 'B3375.0005.9089', '06', 11),
+    ('003', '68990011', '06', 'B3375.0005.9089', '06', 13),
+    ('004', '68990011', '06', 'B3375.0005.9089', '06', 12),
+    
+    ('001', '77889900', '06', 'B3375.0005.9090', '05', 5),
+    ('002', '77889900', '06', 'B3375.0005.9090', '05', 6),
+    ('003', '77889900', '06', 'B3375.0005.9089', '05', 14),
+    ('004', '77889900', '06', 'B3375.0005.9090', '05', 8),
+    ('005', '77889900', '06', 'B3375.0005.9090', '05', 7),
+    ('006', '77889900', '06', 'B3375.0005.9089', '05', 15),
+    ('007', '77889900', '06', 'B3375.0005.9090', '05', 6),
+	('008', '77889900', '06', 'B3375.0005.9090', '05', 7),
+    
+    
+    ('001', '50112233', '07', 'B3375.0005.9089', '01', 12),
+    ('002', '50112233', '07', 'B3375.0005.9090', '01', 6),
+    ('003', '50112233', '07', 'B3375.0005.9089', '01', 14),
+    ('004', '50112233', '07', 'B3375.0005.9090', '01', 7),
+    ('005', '50112233', '07', 'B3375.0005.9090', '01', 7),
+    ('006', '50112233', '07', 'B3375.0005.9089', '01', 15),
+    ('007', '50112233', '07', 'B3375.0005.9090', '01', 6),
+	('008', '50112233', '07', 'B3375.0005.9090', '01', 7),
+    
+    ('001', '64556977', '07', 'B3375.0005.9090', '02', 7),
+    ('002', '64556977', '07', 'B3375.0005.9090', '02', 6),
+    ('003', '64556977', '07', 'B3375.0005.9090', '02', 8),
+    ('004', '64556977', '07', 'B3375.0005.9090', '02', 7),
+    ('005', '64556977', '07', 'B3375.0005.9090', '02', 7),
+    ('006', '64556977', '07', 'B3375.0005.9090', '02', 5),
+    ('007', '64556977', '07', 'B3375.0005.9090', '02', 6),
+	('008', '64556977', '07', 'B3375.0005.9090', '02', 7),
+    ('003', '64556977', '07', 'B3375.0005.9089', '04', 14),
+    ('004', '64556977', '07', 'B3375.0005.9089', '04', 10),
+    ('005', '64556977', '07', 'B3375.0005.9089', '04', 11),
+    
+    ('001', '61223344', '07', 'B3375.0005.9090', '03', 7),
+    ('002', '61223344', '07', 'B3375.0005.9090', '03', 6),
+    ('003', '61223344', '07', 'B3375.0005.9090', '03', 8),
+    ('004', '61223344', '07', 'B3375.0005.9090', '03', 7),
+    ('005', '61223344', '07', 'B3375.0005.9089', '03', 17),
+    ('006', '61223344', '07', 'B3375.0005.9090', '03', 5),
+    ('007', '61223344', '07', 'B3375.0005.9089', '03', 16),
+	('008', '61223344', '07', 'B3375.0005.9090', '03', 7),
+    
+    ('001', '72334455', '07', 'B3375.0005.9090', '05', 7),
+    ('002', '72334455', '07', 'B3375.0005.9090', '05', 6),
+    ('003', '72334455', '07', 'B3375.0005.9090', '05', 8),
+    ('004', '72334455', '07', 'B3375.0005.9090', '05', 7),
+    ('005', '72334455', '07', 'B3375.0005.9089', '05', 17),
+    ('006', '72334455', '07', 'B3375.0005.9089', '05', 15),
+    ('007', '72334455', '07', 'B3375.0005.9089', '05', 16),
+	('008', '72334455', '07', 'B3375.0005.9089', '05', 12),
+    
+    ('001', '63448566', '07', 'B3375.0005.9090', '06', 7),
+    ('002', '63448566', '07', 'B3375.0005.9090', '06', 6),
+    ('003', '63448566', '07', 'B3375.0005.9090', '06', 8),
+    ('004', '63448566', '07', 'B3375.0005.9090', '06', 7),
+    ('005', '63448566', '07', 'B3375.0005.9089', '06', 17),
+    ('006', '63448566', '07', 'B3375.0005.9090', '06', 5),
+    ('007', '63448566', '07', 'B3375.0005.9090', '06', 6),
+	('008', '63448566', '07', 'B3375.0005.9089', '06', 12),
+    
+    
+    ('001', '55667788', '08', 'B3375.0005.9090', '01', 7),
+    ('002', '55667788', '08', 'B3375.0005.9090', '01', 6),
+    ('003', '55667788', '08', 'B3375.0005.9090', '01', 8),
+    ('004', '55667788', '08', 'B3375.0005.9090', '01', 7),
+    ('005', '55667788', '08', 'B3375.0005.9090', '01', 6),
+    ('006', '55667788', '08', 'B3375.0005.9090', '01', 5),
+    ('007', '55667788', '08', 'B3375.0005.9090', '01', 6),
+	('008', '55667788', '08', 'B3375.0005.9089', '01', 12),
+    
+    ('001', '78990043', '08', 'B3375.0005.9090', '02', 7),
+    ('002', '78990043', '08', 'B3375.0005.9089', '02', 16),
+    ('003', '78990043', '08', 'B3375.0005.9090', '02', 8),
+    ('004', '78990043', '08', 'B3375.0005.9089', '02', 17),
+    ('005', '78990043', '08', 'B3375.0005.9090', '02', 6),
+    ('006', '78990043', '08', 'B3375.0005.9090', '02', 5),
+    ('007', '78990043', '08', 'B3375.0005.9090', '02', 6),
+	('008', '78990043', '08', 'B3375.0005.9090', '02', 4),
+    
+    ('001', '79001154', '08', 'B3375.0005.9090', '03', 7),
+    ('002', '79001154', '08', 'B3375.0005.9089', '03', 16),
+    ('003', '79001154', '08', 'B3375.0005.9090', '03', 8),
+    ('004', '79001154', '08', 'B3375.0005.9090', '03', 7),
+    ('005', '79001154', '08', 'B3375.0005.9090', '03', 6),
+    ('006', '79001154', '08', 'B3375.0005.9089', '03', 15),
+    ('007', '79001154', '08', 'B3375.0005.9090', '03', 6),
+	('008', '79001154', '08', 'B3375.0005.9089', '03', 14),
+    
+    ('001', '50011265', '08', 'B3375.0005.9089', '04', 17),
+    ('002', '50011265', '08', 'B3375.0005.9090', '04', 4),
+    ('003', '50011265', '08', 'B3375.0005.9090', '04', 6),
+    ('004', '50011265', '08', 'B3375.0005.9090', '04', 7),
+    ('005', '50011265', '08', 'B3375.0005.9090', '04', 6),
+    ('006', '50011265', '08', 'B3375.0005.9089', '04', 15),
+    ('007', '50011265', '08', 'B3375.0005.9090', '04', 6),
+	('008', '50011265', '08', 'B3375.0005.9089', '04', 14),
+    
+    ('001', '61122376', '08', 'B3375.0005.9090', '05', 7),
+    ('002', '61122376', '08', 'B3375.0005.9090', '05', 4),
+    ('003', '61122376', '08', 'B3375.0005.9090', '05', 6),
+    ('004', '61122376', '08', 'B3375.0005.9090', '05', 7),
+    ('005', '61122376', '08', 'B3375.0005.9090', '05', 6),
+    ('006', '61122376', '08', 'B3375.0005.9090', '05', 5),
+    ('007', '61122376', '08', 'B3375.0005.9090', '05', 6),
+	('008', '61122376', '08', 'B3375.0005.9090', '05', 4),
+    ('001', '61122376', '08', 'B3375.0005.9089', '06', 17),
+    ('002', '61122376', '08', 'B3375.0005.9090', '06', 14),
+    ('003', '61122376', '08', 'B3375.0005.9090', '06', 16);
+    
+    
+    
+    
+-- CREACION DE PROCEDIMIENTOS
+
+-- Procedimiento 01
+DELIMITER //
+CREATE PROCEDURE ObtenerSolicitudesPorTiempo(IN fecha_inicio DATE, IN fecha_fin DATE)
+BEGIN
+    SELECT
+        T_Sol_Req.num AS NumeroSolicitud,
+        M_Res.pno AS NombreResponsable,
+        M_Res.apa AS ApellidoPaternoResponsable,
+        M_Res.ama AS ApellidoMaternoResponsable,
+        M_Dep.nom AS NombreDependencia,
+        T_Sol_Req.fec_cre AS FechaCreacion,
+        SUM(T_Det_Sol_Req.tot) AS TotalGeneral
+    FROM
+        T_Sol_Req
+    INNER JOIN M_Res ON T_Sol_Req.dni_res = M_Res.dni
+    INNER JOIN M_Dep ON T_Sol_Req.cod_dep = M_Dep.cod
+    LEFT JOIN T_Det_Sol_Req ON T_Sol_Req.num = T_Det_Sol_Req.num_sol_req
+								 AND T_Sol_Req.dni_res =  T_Det_Sol_Req.dni_res_sol_req
+                                 AND T_Sol_Req.cod_dep =  T_Det_Sol_Req.cod_dep_sol_req
+    WHERE
+        T_Sol_Req.fec_cre BETWEEN fecha_inicio AND fecha_fin
+	GROUP BY
+        T_Sol_Req.num, M_Res.dni, M_Dep.cod;
+    END //
+DELIMITER ;
+
+-- CALL ObtenerSolicitudesPorTiempo('2023-01-01', '2023-01-31');
+
+
+-- Procedimiento 02
+DELIMITER //
+CREATE PROCEDURE ObtenerSolicitudesPorDependencia(IN dependencia CHAR(2))
+BEGIN
+    SELECT
+        T_Sol_Req.num AS NumeroSolicitud,
+        M_Res.pno AS NombreResponsable,
+        M_Res.apa AS ApellidoPaternoResponsable,
+        M_Res.ama AS ApellidoMaternoResponsable,
+        M_Res_Tec.pno AS NombreResponsableTecnico,
+        M_Res_Tec.apa AS ApellidoPaternoResponsableTecnico,
+        M_Res_Tec.ama AS ApellidoMaternoResponsable,
+        SUM(T_Det_Sol_Req.tot) AS TotalGeneral
+    FROM
+        T_Sol_Req
+	RIGHT JOIN M_Dep ON T_Sol_Req.cod_dep = M_Dep.cod
+	INNER JOIN M_Res ON T_Sol_Req.dni_res = M_Res.dni
+    LEFT JOIN T_Det_Sol_Req ON T_Sol_Req.num = T_Det_Sol_Req.num_sol_req
+	INNER JOIN M_Zon_Pro ON M_Res.dni = M_Zon_Pro.dni_res -- modificacion 
+    INNER JOIN M_Res_Tec ON M_Zon_Pro.dni_res_tec = M_Res_Tec.dni -- modificacion 
+    WHERE
+        T_Sol_Req.cod_dep = dependencia
+    GROUP BY
+        T_Sol_Req.num, M_Res.dni, M_Dep.cod, M_Res_Tec.dni;
+END //
+DELIMITER ;
+
+-- CALL ObtenerSolicitudesPorDependencia('06');
+
+
+-- Procedimiento 03
+DELIMITER //
+CREATE PROCEDURE ObtenerSolicitudesPorResponsable(IN dni_resposable CHAR(8))
+BEGIN
+    SELECT
+        T_Sol_Req.num AS NumeroSolicitud,
+        M_Dep.nom AS NombreDependencia,
+        M_Zon_Pro.nom_zon_pro AS ZonaProduccion, -- modificacion
+        M_Res_Tec.pno AS NombreResponsableTecnico,
+        M_Res_Tec.apa AS ApellidoPaternoResponsableTecnico,
+        M_Res_Tec.ama AS ApellidoMaternoResponsableTecnico,
+        SUM(T_Det_Sol_Req.tot) AS TotalGeneral
+    FROM
+        T_Sol_Req
+	RIGHT JOIN M_Res ON T_Sol_Req.dni_res = M_Res.dni
+    INNER JOIN M_Dep ON T_Sol_Req.cod_dep = M_Dep.cod
+	LEFT JOIN T_Det_Sol_Req ON T_Sol_Req.num = T_Det_Sol_Req.num_sol_req    
+    INNER JOIN M_Zon_Pro ON M_Res.dni = M_Zon_Pro.dni_res -- modificacion 
+    INNER JOIN M_Res_Tec ON M_Zon_Pro.dni_res_tec = M_Res_Tec.dni -- modificacion 
+    WHERE
+        T_Sol_Req.dni_res = dni_resposable
+    GROUP BY
+        T_Sol_Req.num, M_Dep.cod, M_Res_Tec.dni, M_Zon_Pro.cod_zon_pro, M_Zon_Pro.cod_dep ;
+END //
+DELIMITER ;
+
+-- CALL ObtenerSolicitudesPorResponsable('72675774');
+
+-- Procedimientos 04
+DELIMITER //
+CREATE PROCEDURE ObtenerSolicitudesPorZonaUso(IN codigo_dependencia CHAR(2), IN codigo_zona CHAR(2))
+BEGIN
+    SELECT
+        T_Sol_Req.num AS NumeroSolicitud,
+        M_Dep.nom AS NombreDependencia,
+        M_Zon_Pro.nom_zon_pro AS NombreZona,
+        M_Res.pno AS NombreResponsable,
+        M_Res.apa AS ApellidoPaternoResponsable,
+        M_Res.ama AS ApellidoMaternoResponsable,
+        M_Res_Tec.pno AS NombreResponsableTecnico,
+        M_Res_Tec.apa AS ApellidoPaternoResponsableTecnico,
+        M_Res_Tec.ama AS ApellidoMaternoResponsableTecnico,
+        M_Pro_Qui.nom_pro_qui AS ProductoQuimico,
+        T_Det_Sol_Req.can AS CantidadTotalProducto,
+        T_Det_Sol_Req.tot AS TotalProducto
+    FROM
+        T_Sol_Req
+    INNER JOIN M_Dep ON T_Sol_Req.cod_dep = M_Dep.cod
+    INNER JOIN M_Res ON T_Sol_Req.dni_res = M_Res.dni
+    INNER JOIN M_Zon_Pro ON M_Res.dni = M_Zon_Pro.dni_res
+    INNER JOIN M_Res_Tec ON M_Zon_Pro.dni_res_tec = M_Res_Tec.dni
+    LEFT JOIN T_Det_Sol_Req ON T_Sol_Req.num = T_Det_Sol_Req.num_sol_req
+                                 AND M_Zon_Pro.cod_zon_pro = T_Det_Sol_Req.cod_zon_uso_pro
+                                 AND M_Res.dni = T_Det_Sol_Req.dni_res_sol_req -- modificacion
+    RIGHT JOIN M_Pro_Qui ON T_Det_Sol_Req.cod_pro = M_Pro_Qui.cod
+    WHERE
+        T_Sol_Req.cod_dep = codigo_dependencia
+        AND M_Zon_Pro.cod_zon_pro = codigo_zona;
+END //
+DELIMITER ;
+
+-- CALL ObtenerSolicitudesPorZonaUso('02', '05');
+
+-- Procedimientos 05
+DELIMITER //
+CREATE PROCEDURE ListarProductosPorCantidad()
+BEGIN
+    SELECT
+        M_Pro_Qui.cod AS CodigoProductoQuimico,
+        M_Pro_Qui.nom_pro_qui AS NombreProductoQuimico,
+        SUM(T_Det_Sol_Req.can) AS CantidadTotalProducto,
+        SUM(T_Det_Sol_Req.tot) AS TotalProducto
+    FROM
+        T_Det_Sol_Req
+    RIGHT JOIN M_Pro_Qui ON T_Det_Sol_Req.cod_pro = M_Pro_Qui.cod
+    GROUP BY
+        M_Pro_Qui.cod
+    ORDER BY 
+        SUM(T_Det_Sol_Req.can) DESC;
+END //
+DELIMITER ;
+
+-- CALL ListarProductosPorCantidad();
+
+-- Procedimientos 06
+DELIMITER //
+CREATE PROCEDURE ObtenerSolicitudesPorResponsableTecnico(IN dni_resposableTecnico CHAR(8))
+BEGIN
+    SELECT
+        T_Sol_Req.num AS NumeroSolicitud,
+        M_Dep.nom AS NombreDependencia,
+        M_Res.pno AS NombreResponsable,
+        M_Res.apa AS ApellidoPaternoResponsable,
+        M_Res.ama AS ApellidoMaternoResponsable,
+        SUM(T_Det_Sol_Req.tot) AS TotalGeneral
+    FROM
+        M_Res_Tec
+	RIGHT JOIN M_Zon_Pro ON M_Zon_Pro.dni_res_tec = M_Res_Tec.dni
+	RIGHT JOIN M_Res ON M_Zon_Pro.dni_res = M_Res.dni -- modificacion
+	RIGHT JOIN M_Dep ON M_Zon_Pro.cod_dep = M_Dep.cod
+	RIGHT JOIN T_Sol_Req ON T_Sol_Req.dni_res = M_Res.dni
+    RIGHT JOIN T_Det_Sol_Req ON T_Det_Sol_Req.num_sol_req = T_Sol_Req.num
+   	
+    WHERE
+        M_Res_Tec.dni = dni_resposableTecnico
+    GROUP BY
+        T_Sol_Req.num, M_Dep.cod, M_Res.dni;
+END //
+DELIMITER ;
+
+-- CALL ObtenerSolicitudesPorResponsableTecnico('67890123');
+
+-- Procedimientos 07
+DELIMITER //
+CREATE PROCEDURE UltimaSolicitudPorResponsable(IN dni_responsable CHAR(8))
+BEGIN
+    SELECT
+        T_Sol_Req.num AS NumeroSolicitud,
+		M_Dep.nom AS NombreDependencia,
+        M_Res.pno AS NombreResponsable,
+        M_Res.apa AS ApellidoPaternoResponsable,
+        M_Res.ama AS ApellidoMaternoResponsable,
+        M_Res_Tec.pno AS NombreResponsableTecnico,
+        M_Res_Tec.apa AS ApellidoPaternoResponsableTecnico,
+        M_Res_Tec.ama AS ApellidoMaternoResponsableTecnico,
+        T_Sol_Req.mot AS MotivoSolicitud,
+		T_Sol_Req.fec_cre AS FechaCreacionSolicitud,
+		T_Sol_Req.fec_ent AS FechaEntregaProductos,
+        M_Pro_Qui.cod AS CodigoProducto,
+        M_Pro_Qui.nom_pro_qui AS NombreProducto,
+        M_Zon_Pro.nom_zon_pro AS ZonoUso,
+        M_Pro_Qui.uni_med AS Unidadmedida,
+        M_Pro_Qui.pre_uni AS PrecioUnitario,
+        T_Det_Sol_Req.can AS Cantidad,
+        T_Det_Sol_Req.tot AS Total
+        
+    FROM
+        T_Sol_Req
+	LEFT JOIN M_Res ON T_Sol_Req.dni_res = M_Res.dni
+	RIGHT JOIN M_Dep ON T_Sol_Req.cod_dep = M_Dep.cod
+	INNER JOIN M_Zon_Pro ON M_Res.dni = M_Zon_Pro.dni_res -- modificacion 
+    INNER JOIN M_Res_Tec ON M_Zon_Pro.dni_res_tec = M_Res_Tec.dni -- modificacion 
+	RIGHT JOIN T_Det_Sol_Req ON T_Sol_Req.num = T_Det_Sol_Req.num_sol_req  
+								 AND M_Res.dni = T_Det_Sol_Req.dni_res_sol_req
+                                 AND M_Zon_Pro.cod_zon_pro  = T_Det_Sol_Req.cod_zon_uso_pro
+	RIGHT JOIN M_Pro_Qui ON T_Det_Sol_Req.cod_pro = M_Pro_Qui.cod
+    
+    WHERE
+        T_Sol_Req.dni_res = dni_responsable      
+	ORDER BY 
+		T_Sol_Req.fec_cre DESC LIMIT 2; -- hacer que muestre 2 cuando el cod, dep y res son iguales, sino que muestre 1
+END //
+DELIMITER ;
+
+--  CALL UltimaSolicitudPorResponsable('50011265');
+
+-- Procedimientos 08
+DELIMITER //
+CREATE PROCEDURE UltimaSolicitudPorDependencia(IN cod_dependencia CHAR(2))
+BEGIN
+    SELECT
+        T_Sol_Req.num AS NumeroSolicitud,
+		M_Dep.nom AS NombreDependencia,
+        M_Res.pno AS NombreResponsable,
+        M_Res.apa AS ApellidoPaternoResponsable,
+        M_Res.ama AS ApellidoMaternoResponsable,
+        M_Res_Tec.pno AS NombreResponsableTecnico,
+        M_Res_Tec.apa AS ApellidoPaternoResponsableTecnico,
+        M_Res_Tec.ama AS ApellidoMaternoResponsableTecnico,
+        T_Sol_Req.mot AS MotivoSolicitud,
+		T_Sol_Req.fec_cre AS FechaCreacionSolicitud,
+		T_Sol_Req.fec_ent AS FechaEntregaProductos,
+        M_Pro_Qui.cod AS CodigoProducto,
+        M_Pro_Qui.nom_pro_qui AS NombreProducto,
+        M_Zon_Pro.nom_zon_pro AS ZonoUso,
+        M_Pro_Qui.uni_med AS Unidadmedida,
+        M_Pro_Qui.pre_uni AS PrecioUnitario,
+        T_Det_Sol_Req.can AS Cantidad,
+        T_Det_Sol_Req.tot AS Total
+        
+    FROM
+        T_Sol_Req
+	LEFT JOIN M_Res ON T_Sol_Req.dni_res = M_Res.dni
+	RIGHT JOIN M_Dep ON T_Sol_Req.cod_dep = M_Dep.cod
+	INNER JOIN M_Zon_Pro ON M_Res.dni = M_Zon_Pro.dni_res -- modificacion 
+    INNER JOIN M_Res_Tec ON M_Zon_Pro.dni_res_tec = M_Res_Tec.dni -- modificacion 
+	RIGHT JOIN T_Det_Sol_Req ON T_Sol_Req.num = T_Det_Sol_Req.num_sol_req  
+								 AND M_Res.dni = T_Det_Sol_Req.dni_res_sol_req
+                                 AND M_Zon_Pro.cod_zon_pro  = T_Det_Sol_Req.cod_zon_uso_pro
+	RIGHT JOIN M_Pro_Qui ON T_Det_Sol_Req.cod_pro = M_Pro_Qui.cod
+    
+    WHERE
+        T_Sol_Req.cod_dep = cod_dependencia      
+	ORDER BY 
+		T_Sol_Req.fec_cre DESC LIMIT 2; -- hacer que muestre 2 cuando el cod, dep y res son iguales, sino que muestre 1
+END //
+DELIMITER ;
+
+-- CALL UltimaSolicitudPorDependencia('02');
+
+-- Procedimientos 09
+DELIMITER //
+CREATE PROCEDURE UltimaSolicitudPorZonaUso(IN codigo_dependencia CHAR(2), IN codigo_zona CHAR(2))
+BEGIN
+    SELECT
+        T_Sol_Req.num AS NumeroSolicitud,
+		M_Dep.nom AS NombreDependencia,
+        M_Res.pno AS NombreResponsable,
+        M_Res.apa AS ApellidoPaternoResponsable,
+        M_Res.ama AS ApellidoMaternoResponsable,
+        M_Res_Tec.pno AS NombreResponsableTecnico,
+        M_Res_Tec.apa AS ApellidoPaternoResponsableTecnico,
+        M_Res_Tec.ama AS ApellidoMaternoResponsableTecnico,
+        T_Sol_Req.mot AS MotivoSolicitud,
+		T_Sol_Req.fec_cre AS FechaCreacionSolicitud,
+		T_Sol_Req.fec_ent AS FechaEntregaProductos,
+        M_Pro_Qui.cod AS CodigoProducto,
+        M_Pro_Qui.nom_pro_qui AS NombreProducto,
+        M_Zon_Pro.nom_zon_pro AS ZonoUso,
+        M_Pro_Qui.uni_med AS Unidadmedida,
+        M_Pro_Qui.pre_uni AS PrecioUnitario,
+        T_Det_Sol_Req.can AS Cantidad,
+        T_Det_Sol_Req.tot AS Total
+        
+    FROM
+        T_Sol_Req
+	LEFT JOIN M_Res ON T_Sol_Req.dni_res = M_Res.dni
+	RIGHT JOIN M_Dep ON T_Sol_Req.cod_dep = M_Dep.cod
+	INNER JOIN M_Zon_Pro ON M_Res.dni = M_Zon_Pro.dni_res -- modificacion 
+    INNER JOIN M_Res_Tec ON M_Zon_Pro.dni_res_tec = M_Res_Tec.dni -- modificacion 
+	RIGHT JOIN T_Det_Sol_Req ON T_Sol_Req.num = T_Det_Sol_Req.num_sol_req  
+								 AND M_Res.dni = T_Det_Sol_Req.dni_res_sol_req
+                                 AND M_Zon_Pro.cod_zon_pro  = T_Det_Sol_Req.cod_zon_uso_pro
+	RIGHT JOIN M_Pro_Qui ON T_Det_Sol_Req.cod_pro = M_Pro_Qui.cod
+    
+    WHERE
+        T_Sol_Req.cod_dep = codigo_dependencia
+        AND M_Zon_Pro.cod_zon_pro = codigo_zona
+	ORDER BY 
+		T_Sol_Req.fec_cre DESC LIMIT 2; -- hacer que muestre 2 cuando el cod, dep y res son iguales, sino que muestre 1
+END //
+DELIMITER ;
+
+-- CALL UltimaSolicitudPorZonaUso('02', '05');
+
+-- Procedimientos 10
+DELIMITER //
+CREATE PROCEDURE UltimaSolicitudPorResponsableTecnico(IN dni_resposableTecnico CHAR(8))
+BEGIN
+    SELECT
+        T_Sol_Req.num AS NumeroSolicitud,
+		M_Dep.nom AS NombreDependencia,
+        M_Res.pno AS NombreResponsable,
+        M_Res.apa AS ApellidoPaternoResponsable,
+        M_Res.ama AS ApellidoMaternoResponsable,
+        M_Res_Tec.pno AS NombreResponsableTecnico,
+        M_Res_Tec.apa AS ApellidoPaternoResponsableTecnico,
+        M_Res_Tec.ama AS ApellidoMaternoResponsableTecnico,
+        T_Sol_Req.mot AS MotivoSolicitud,
+		T_Sol_Req.fec_cre AS FechaCreacionSolicitud,
+		T_Sol_Req.fec_ent AS FechaEntregaProductos,
+        M_Pro_Qui.cod AS CodigoProducto,
+        M_Pro_Qui.nom_pro_qui AS NombreProducto,
+        M_Zon_Pro.nom_zon_pro AS ZonoUso,
+        M_Pro_Qui.uni_med AS Unidadmedida,
+        M_Pro_Qui.pre_uni AS PrecioUnitario,
+        T_Det_Sol_Req.can AS Cantidad,
+        T_Det_Sol_Req.tot AS Total
+        
+    FROM
+        T_Sol_Req
+	LEFT JOIN M_Res ON T_Sol_Req.dni_res = M_Res.dni
+	RIGHT JOIN M_Dep ON T_Sol_Req.cod_dep = M_Dep.cod
+	INNER JOIN M_Zon_Pro ON M_Res.dni = M_Zon_Pro.dni_res -- modificacion 
+    INNER JOIN M_Res_Tec ON M_Zon_Pro.dni_res_tec = M_Res_Tec.dni -- modificacion 
+	RIGHT JOIN T_Det_Sol_Req ON T_Sol_Req.num = T_Det_Sol_Req.num_sol_req  
+								 AND M_Res.dni = T_Det_Sol_Req.dni_res_sol_req
+                                 AND M_Zon_Pro.cod_zon_pro  = T_Det_Sol_Req.cod_zon_uso_pro
+	RIGHT JOIN M_Pro_Qui ON T_Det_Sol_Req.cod_pro = M_Pro_Qui.cod
+    
+    WHERE
+         M_Res_Tec.dni = dni_resposableTecnico
+	ORDER BY 
+		T_Sol_Req.fec_cre DESC LIMIT 2; -- hacer que muestre 2 cuando el cod, dep y res son iguales, sino que muestre 1
+END //
+DELIMITER ;
+
+-- CALL UltimaSolicitudPorResponsableTecnico('67890123');
+
+
+
+-- Procedimientos para el sistema
+DELIMITER //
+CREATE PROCEDURE ObtenerDependencia()
+BEGIN
+    SELECT
+        M_Dep.cod AS CdigoDependecia,
+        M_Dep.nom AS NombreDependencia      
+    FROM
+        M_Dep;
+END //
+DELIMITER ;
+
+-- CALL ObtenerDependencia();
+
+DELIMITER //
+CREATE PROCEDURE ObtenerResponsableporDependencia(in cod_dependencia CHAR(2))
+BEGIN
+    SELECT DISTINCT 
+        M_Res.dni AS DniResponsable,
+        M_Res.pno AS NombreResponsable,
+        M_Res.apa AS ApelidoPaternoResponsable,
+        M_Res.ama AS ApellidoMaternoResponsable 
+    FROM
+        M_Dep
+    INNER JOIN M_Zon_Pro ON M_Dep.cod = M_Zon_Pro.cod_dep
+    INNER JOIN M_Res ON M_Zon_Pro.dni_res = M_Res.dni
+    WHERE
+        M_Dep.cod = cod_dependencia;
+END //
+DELIMITER ;
+-- CALL ObtenerResponsableporDependencia('01');
+
+DELIMITER //
+CREATE PROCEDURE ObtenerResponsableTecnicoPorResponsable(in dni_responsable CHAR(8))
+BEGIN
+    SELECT DISTINCT
+        M_Res_Tec.dni AS DniResponsableTecnico,
+        M_Res_Tec.pno AS NombreResponsableTecnico,
+        M_Res_Tec.apa AS ApelidoPaternoResponsableTecnico,
+        M_Res_Tec.ama AS ApellidoMaternoResponsableTecnico 
+    FROM
+        M_Zon_Pro
+    INNER JOIN M_Res_Tec ON M_Res_Tec.dni = M_Zon_Pro.dni_res_tec
+    WHERE
+        M_Zon_Pro.dni_res = dni_responsable;
+END //
+DELIMITER ;
+-- CALL ObtenerResponsableTecnicoPorResponsable('55667788');
+
+
+DELIMITER //
+CREATE PROCEDURE ObtenerZonaUzoPorResponsable(in dni_responsable CHAR(8))
+BEGIN
+    SELECT
+        M_Zon_Pro.cod_zon_pro AS CodigoZonadeProuccion,
+        M_Zon_Pro.nom_zon_pro AS NombreZonaProduccion
+    FROM
+        M_Zon_Pro
+    INNER JOIN M_Res_Tec ON M_Res_Tec.dni = M_Zon_Pro.dni_res_tec
+    WHERE
+        M_Zon_Pro.dni_res = dni_responsable;
+END //
+DELIMITER ;
+-- CALL ObtenerZonaUzoPorResponsable('76543210');
+
+DELIMITER //
+CREATE PROCEDURE ObtenerProductosQuimicos()
+BEGIN
+    SELECT
+        M_Pro_Qui.cod AS CodigoProductoQuimico,
+        M_Pro_Qui.nom_pro_qui AS NombreProductoQuimico,
+        M_Pro_Qui.uni_med AS UnidadMedida,
+        M_Pro_Qui.pre_uni AS PrecioUnitarioProducto
+    FROM
+        M_Pro_Qui;
+END //
+DELIMITER ;
+-- CALL ObtenerProductosQuimicos();
+
+DELIMITER //
+CREATE PROCEDURE TodasLasSolicitudes()
+BEGIN
+    SELECT
+        T_Sol_Req.num AS NumeroSolicitud,
+        M_Dep.cod AS CodigoDependencia,
+		M_Dep.nom AS NombreDependencia,
+        M_Res.dni AS DniResponsable,
+        M_Res.pno AS NombreResponsable,
+        M_Res.apa AS ApellidoPaternoResponsable,
+        M_Res.ama AS ApellidoMaternoResponsable,
+        M_Res_Tec.pno AS NombreResponsableTecnico,
+        M_Res_Tec.apa AS ApellidoPaternoResponsableTecnico,
+        M_Res_Tec.ama AS ApellidoMaternoResponsableTecnico,
+		T_Sol_Req.fec_cre AS FechaCreacionSolicitud,
+        SUM(T_Det_Sol_Req.tot) AS TotalGeneral
+    FROM
+        T_Sol_Req
+	LEFT JOIN M_Res ON T_Sol_Req.dni_res = M_Res.dni
+	RIGHT JOIN M_Dep ON T_Sol_Req.cod_dep = M_Dep.cod
+	INNER JOIN M_Zon_Pro ON M_Res.dni = M_Zon_Pro.dni_res -- modificacion 
+    INNER JOIN M_Res_Tec ON M_Zon_Pro.dni_res_tec = M_Res_Tec.dni -- modificacion 
+	RIGHT JOIN T_Det_Sol_Req ON T_Sol_Req.num = T_Det_Sol_Req.num_sol_req  
+								 AND M_Res.dni = T_Det_Sol_Req.dni_res_sol_req
+                                 AND M_Zon_Pro.cod_zon_pro  = T_Det_Sol_Req.cod_zon_uso_pro
+	RIGHT JOIN M_Pro_Qui ON T_Det_Sol_Req.cod_pro = M_Pro_Qui.cod
+	GROUP BY
+        T_Sol_Req.num, M_Res.dni, M_Dep.cod, M_Res_Tec.dni;
+END //
+DELIMITER ;
+
+-- CALL TodasLasSolicitudes();
+
+DELIMITER //
+CREATE PROCEDURE ObtenerNumeroPorResponsable(IN dni_Responsable CHAR(8))
+BEGIN
+    SELECT
+        MAX(T_Sol_Req.num) AS NumeroSolicitud
+    FROM
+        T_Sol_Req
+    WHERE
+		T_Sol_Req.dni_res = dni_Responsable;
+END //
+DELIMITER ;
+
+-- CALL ObtenerNumeroPorResponsable('72675774');
+
+DELIMITER //
+CREATE PROCEDURE InsertarSolicitud(
+    IN p_Num CHAR(3),
+    IN p_DniRes CHAR(8),
+    IN p_CodDep CHAR(2),
+    IN p_Motivo VARCHAR(50),
+    IN p_FechaCreacion DATE,
+    IN p_FechaEntrega DATE
+)
+BEGIN
+    INSERT INTO T_Sol_Req (num, dni_res, cod_dep, mot, fec_cre, fec_ent)
+    VALUES (p_Num, p_DniRes, p_CodDep, p_Motivo, p_FechaCreacion, p_FechaEntrega);
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE InsertarDetalleSolicitud(
+    IN p_NumSolReq CHAR(3),
+    IN p_DniResSolReq CHAR(8),
+    IN p_CodDepSolReq CHAR(2),
+    IN p_CodPro CHAR(15),
+    IN p_CodZonUsoPro CHAR(2),
+    IN p_Can SMALLINT
+)
+BEGIN
+    INSERT INTO T_Det_Sol_Req (num_sol_req, dni_res_sol_req, cod_dep_sol_req, cod_pro, cod_zon_uso_pro, can)
+    VALUES (p_NumSolReq, p_DniResSolReq, p_CodDepSolReq, p_CodPro, p_CodZonUsoPro, p_Can);
+END //
+DELIMITER ;
+
+
+DELIMITER //
+CREATE PROCEDURE EliminarSolicitudRequerimiento(
+    IN p_num CHAR(3),
+    IN p_dni_res CHAR(8),
+    IN p_cod_dep CHAR(2)
+)
+BEGIN
+    START TRANSACTION;
+    -- Eliminar la solicitud de requerimiento en T_Sol_Req
+    DELETE FROM  t_sol_req
+    WHERE t_sol_req.num = p_num AND t_sol_req.dni_res = p_dni_res AND t_sol_req.cod_dep = p_cod_dep;
+
+    COMMIT;
+END //
+DELIMITER ;
+
+
+
+DELIMITER //
+CREATE PROCEDURE ObtenerSolicitudConDetalleParaEditar(
+	IN p_num CHAR(3),
+	IN p_dni_res CHAR(8),
+	IN p_cod_dep CHAR(2)
+)
+BEGIN
+	SELECT
+		SR.num AS NúmeroSolicitud,
+		SR.dni_res AS DNIResponsable,
+		SR.cod_dep AS CodigoDependencia,
+		SR.mot AS Motivo,
+		SR.fec_cre AS FechaCreación,
+		SR.fec_ent AS FechaEntrega,
+		DR.cod_pro AS CódigoProducto,
+		DR.cod_zon_uso_pro AS CódigoZonaUso,
+		DR.can AS Cantidad,
+		DR.tot AS Total
+	FROM
+		T_Sol_Req SR
+	LEFT JOIN
+		T_Det_Sol_Req DR ON SR.num = DR.num_sol_req AND SR.dni_res = DR.dni_res_sol_req AND SR.cod_dep = DR.cod_dep_sol_req
+	WHERE
+		SR.num = p_num AND SR.dni_res = p_dni_res AND SR.cod_dep = p_cod_dep;
+END //
+DELIMITER ;
+
+-- CALL ObtenerSolicitudConDetalleParaEditar('002', '76543210', '01');
+
+DELIMITER //
+CREATE PROCEDURE EditarDetalleSolicitud(
+    IN p_num CHAR(3),
+    IN p_dni_res CHAR(8),
+    IN p_cod_dep CHAR(2),
+    IN p_cod_pro CHAR(15),
+    IN p_cod_zon_uso_pro CHAR(2),
+    IN p_nueva_can SMALLINT,
+    IN p_nueva_fecha_ent DATE
+)
+BEGIN
+    START TRANSACTION;
+    -- Actualizar la cantidad y la fecha de entrega en la tabla T_Det_Sol_Req
+    UPDATE T_Det_Sol_Req
+    SET can = p_nueva_can
+    WHERE num_sol_req = p_num
+        AND dni_res_sol_req = p_dni_res
+        AND cod_dep_sol_req = p_cod_dep
+        AND cod_pro = p_cod_pro
+        AND cod_zon_uso_pro = p_cod_zon_uso_pro;
+    -- Actualizar la fecha de entrega en la tabla T_Sol_Req
+    UPDATE T_Sol_Req
+    SET fec_ent = p_nueva_fecha_ent
+    WHERE num = p_num
+        AND dni_res = p_dni_res
+        AND cod_dep = p_cod_dep;
+    COMMIT;
+END //
+DELIMITER ;
